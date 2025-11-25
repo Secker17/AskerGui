@@ -1,6 +1,8 @@
 import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
 import { DataContext } from '../context/DataContext';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const Wrapper = styled.div`
   display: grid;
@@ -219,6 +221,48 @@ const Input = styled.input`
   }
 `;
 
+const ImageInput = styled.input`
+  display: none;
+`;
+
+const ImageUploadLabel = styled.label`
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: #bdbdbd;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+
+  &:hover {
+    border-color: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.08);
+  }
+`;
+
+const ImagePreview = styled.div`
+  width: 100%;
+  height: 150px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-top: 0.5rem;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
 const Select = styled.select`
   width: 100%;
   padding: 0.7rem;
@@ -252,23 +296,24 @@ const Button = styled.button`
   border: none;
   border-radius: 10px;
   font-weight: 900;
-  cursor: pointer;
+  cursor: ${p => (p.disabled ? 'not-allowed' : 'pointer')};
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-size: 0.8rem;
+  opacity: ${p => (p.disabled ? 0.6 : 1)};
 
   @media (min-width: 768px) {
     padding: 0.9rem 1.8rem;
     font-size: 0.9rem;
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.4);
   }
 
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(0);
   }
 `;
@@ -353,7 +398,7 @@ const PlayerCard = styled.div`
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 12px;
-  padding: 1rem;
+  overflow: hidden;
   text-align: center;
   transition: all 0.3s ease;
 
@@ -363,12 +408,30 @@ const PlayerCard = styled.div`
   }
 
   .image {
+    width: 100%;
+    height: 120px;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
     @media (min-width: 768px) {
+      height: 140px;
       font-size: 3rem;
     }
+  }
+
+  .content {
+    padding: 1rem;
   }
 
   .name {
@@ -440,8 +503,10 @@ function AdminPage() {
     name: '',
     number: '',
     position: '',
-    image: '🏐',
+    image: null,
+    imagePreview: null,
   });
+  const [uploadingPlayer, setUploadingPlayer] = useState(false);
 
   const closeSidebar = () => setSidebarOpen(false);
   const selectTab = (tab) => {
@@ -508,18 +573,55 @@ function AdminPage() {
     setPlayerForm({ ...playerForm, [name]: isNaN(value) ? value : Number(value) });
   };
 
-  const handleAddPlayer = () => {
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPlayerForm({ ...playerForm, image: file });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPlayerForm(prev => ({ ...prev, imagePreview: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddPlayer = async () => {
     if (!playerForm.name || !playerForm.number || !playerForm.position) {
       alert('Fyll inn navn, nummer og posisjon');
       return;
     }
-    addPlayer(playerForm);
+
+    setUploadingPlayer(true);
+    let imageUrl = null;
+
+    if (playerForm.image && typeof playerForm.image !== 'string') {
+      try {
+        const storageRef = ref(storage, `players/${Date.now()}_${playerForm.image.name}`);
+        await uploadBytes(storageRef, playerForm.image);
+        imageUrl = await getDownloadURL(storageRef);
+      } catch (error) {
+        console.error('Feil ved opplasting av bilde:', error);
+        alert('Feil ved opplasting av bilde');
+        setUploadingPlayer(false);
+        return;
+      }
+    }
+
+    addPlayer({
+      name: playerForm.name,
+      number: playerForm.number,
+      position: playerForm.position,
+      image: imageUrl || '🏐',
+    });
+
     setPlayerForm({
       name: '',
       number: '',
       position: '',
-      image: '🏐',
+      image: null,
+      imagePreview: null,
     });
+    setUploadingPlayer(false);
     alert('Spiller lagt til!');
   };
 
@@ -577,29 +679,46 @@ function AdminPage() {
           />
         </FormGroup>
         <FormGroup>
-          <Label>Bilde (Emoji)</Label>
-          <Input
-            type="text"
-            name="image"
-            value={playerForm.image}
-            onChange={handlePlayerChange}
-            maxLength="2"
+          <Label>Bilde</Label>
+          <ImageUploadLabel htmlFor="player-image">
+            📸 Klikk for å velge bilde
+          </ImageUploadLabel>
+          <ImageInput
+            id="player-image"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
           />
+          {playerForm.imagePreview && (
+            <ImagePreview>
+              <img src={playerForm.imagePreview} alt="Preview" />
+            </ImagePreview>
+          )}
         </FormGroup>
-        <Button onClick={handleAddPlayer}>Legg til Spiller</Button>
+        <Button onClick={handleAddPlayer} disabled={uploadingPlayer}>
+          {uploadingPlayer ? 'Laster opp...' : 'Legg til Spiller'}
+        </Button>
 
         <SectionTitle style={{ marginTop: '2rem' }}>Spillere ({players.length})</SectionTitle>
         <PlayerGrid>
           {players.map(player => (
             <PlayerCard key={player.id}>
-              <div className="image">{player.image}</div>
-              <div className="name">{player.name}</div>
-              <div className="number">#{player.number}</div>
-              <div className="position">{player.position}</div>
-              <DeleteButton danger className="delete-btn" onClick={() => {
-                deletePlayer(player.id);
-                alert('Spiller slettet!');
-              }}>Slett</DeleteButton>
+              <div className="image">
+                {player.image && player.image.startsWith('http') ? (
+                  <img src={player.image} alt={player.name} />
+                ) : (
+                  player.image
+                )}
+              </div>
+              <div className="content">
+                <div className="name">{player.name}</div>
+                <div className="number">#{player.number}</div>
+                <div className="position">{player.position}</div>
+                <DeleteButton danger className="delete-btn" onClick={() => {
+                  deletePlayer(player.id);
+                  alert('Spiller slettet!');
+                }}>Slett</DeleteButton>
+              </div>
             </PlayerCard>
           ))}
         </PlayerGrid>
