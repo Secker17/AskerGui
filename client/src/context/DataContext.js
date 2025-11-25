@@ -115,51 +115,108 @@ export function DataProvider({ children }) {
     };
   }, []);
 
-  const updateMotm = (newMotm) => {
-    setMotm(newMotm);
-    set(ref(database, 'motm'), newMotm);
+  const updateMotm = async (newMotm) => {
+    try {
+      setMotm(newMotm);
+      await set(ref(database, 'motm'), newMotm);
+      return true;
+    } catch (error) {
+      console.error('Error updating MOTM:', error);
+      throw error;
+    }
   };
 
-  const addMatch = (match) => {
-    const newMatchRef = push(ref(database, 'matches'));
-    set(newMatchRef, match);
+  const addMatch = async (match) => {
+    try {
+      const newMatchRef = push(ref(database, 'matches'));
+      await set(newMatchRef, match);
+      return true;
+    } catch (error) {
+      console.error('Error adding match:', error);
+      throw error;
+    }
   };
 
-  const deleteMatch = (id) => {
-    console.log('Deleting match with ID:', id);
-    remove(ref(database, `matches/${id}`));
+  const deleteMatch = async (id) => {
+    try {
+      await remove(ref(database, `matches/${id}`));
+      return true;
+    } catch (error) {
+      console.error('Error deleting match:', error);
+      throw error;
+    }
   };
 
-  const updateMatch = (id, updatedMatch) => {
-    set(ref(database, `matches/${id}`), updatedMatch);
+  const updateMatch = async (id, updatedMatch) => {
+    try {
+      await set(ref(database, `matches/${id}`), updatedMatch);
+      return true;
+    } catch (error) {
+      console.error('Error updating match:', error);
+      throw error;
+    }
   };
 
-  const addCase = (caseItem) => {
-    const newCaseRef = push(ref(database, 'cases'));
-    set(newCaseRef, caseItem);
+  const addCase = async (caseItem) => {
+    try {
+      const newCaseRef = push(ref(database, 'cases'));
+      await set(newCaseRef, caseItem);
+      return true;
+    } catch (error) {
+      console.error('Error adding case:', error);
+      throw error;
+    }
   };
 
-  const deleteCase = (id) => {
-    console.log('Deleting case with ID:', id);
-    remove(ref(database, `cases/${id}`));
+  const deleteCase = async (id) => {
+    try {
+      await remove(ref(database, `cases/${id}`));
+      return true;
+    } catch (error) {
+      console.error('Error deleting case:', error);
+      throw error;
+    }
   };
 
-  const updateCase = (id, updatedCase) => {
-    set(ref(database, `cases/${id}`), updatedCase);
+  const updateCase = async (id, updatedCase) => {
+    try {
+      await set(ref(database, `cases/${id}`), updatedCase);
+      return true;
+    } catch (error) {
+      console.error('Error updating case:', error);
+      throw error;
+    }
   };
 
-  const addPlayer = (player) => {
-    const newPlayerRef = push(ref(database, 'players'));
-    set(newPlayerRef, player);
+  const addPlayer = async (player) => {
+    try {
+      const newPlayerRef = push(ref(database, 'players'));
+      await set(newPlayerRef, player);
+      return true;
+    } catch (error) {
+      console.error('Error adding player:', error);
+      throw error;
+    }
   };
 
-  const deletePlayer = (id) => {
-    console.log('Deleting player with ID:', id);
-    remove(ref(database, `players/${id}`));
+  const deletePlayer = async (id) => {
+    try {
+      await remove(ref(database, `players/${id}`));
+      return true;
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      throw error;
+    }
   };
 
-  const updatePlayer = (id, updatedPlayer) => {
-    set(ref(database, `players/${id}`), updatedPlayer);
+  const updatePlayer = async (id, updatedPlayer) => {
+    try {
+      await set(ref(database, `players/${id}`), updatedPlayer);
+      return true;
+    } catch (error) {
+      console.error('Error updating player:', error);
+      throw error;
+    }
   };
 
   return (

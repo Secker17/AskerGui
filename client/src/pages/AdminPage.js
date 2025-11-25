@@ -530,9 +530,13 @@ function AdminPage() {
     }
   };
 
-  const handleMotmSave = () => {
-    updateMotm(motmForm);
-    alert('Man of the Match oppdatert!');
+  const handleMotmSave = async () => {
+    try {
+      await updateMotm(motmForm);
+      alert('Man of the Match oppdatert!');
+    } catch (error) {
+      alert('Feil ved oppdatering av MOTM: ' + error.message);
+    }
   };
 
   const handleMatchChange = (e) => {
@@ -540,32 +544,36 @@ function AdminPage() {
     setMatchForm({ ...matchForm, [name]: value });
   };
 
-  const handleAddMatch = () => {
+  const handleAddMatch = async () => {
     if (!matchForm.date || !matchForm.opponent) {
       alert('Fyll inn dato og motstander');
       return;
     }
     
-    if (editingMatch) {
-      // Update existing match
-      const updatedMatch = { ...matchForm, id: editingMatch.id };
-      deleteMatch(editingMatch.id);
-      addMatch(updatedMatch);
-      setEditingMatch(null);
-      alert('Kamp oppdatert!');
-    } else {
-      // Add new match
-      addMatch(matchForm);
-      alert('Kamp lagt til!');
+    try {
+      if (editingMatch) {
+        // Update existing match
+        const updatedMatch = { ...matchForm, id: editingMatch.id };
+        await deleteMatch(editingMatch.id);
+        await addMatch(updatedMatch);
+        setEditingMatch(null);
+        alert('Kamp oppdatert!');
+      } else {
+        // Add new match
+        await addMatch(matchForm);
+        alert('Kamp lagt til!');
+      }
+      
+      setMatchForm({
+        date: '',
+        time: '',
+        opponent: '',
+        logo: '🦁',
+        location: '',
+      });
+    } catch (error) {
+      alert('Feil ved lagring av kamp: ' + error.message);
     }
-    
-    setMatchForm({
-      date: '',
-      time: '',
-      opponent: '',
-      logo: '🦁',
-      location: '',
-    });
   };
 
   const handleEditMatch = (match) => {
@@ -596,32 +604,36 @@ function AdminPage() {
     setCaseForm({ ...caseForm, [name]: isNaN(value) ? value : Number(value) });
   };
 
-  const handleAddCase = () => {
+  const handleAddCase = async () => {
     if (!caseForm.player || !caseForm.reason) {
       alert('Fyll inn spiller og årsak');
       return;
     }
     
-    if (editingCase) {
-      // Update existing case
-      const updatedCase = { ...caseForm, id: editingCase.id };
-      deleteCase(editingCase.id);
-      addCase(updatedCase);
-      setEditingCase(null);
-      alert('Rettssak oppdatert!');
-    } else {
-      // Add new case
-      addCase(caseForm);
-      alert('Rettssak lagt til!');
+    try {
+      if (editingCase) {
+        // Update existing case
+        const updatedCase = { ...caseForm, id: editingCase.id };
+        await deleteCase(editingCase.id);
+        await addCase(updatedCase);
+        setEditingCase(null);
+        alert('Rettssak oppdatert!');
+      } else {
+        // Add new case
+        await addCase(caseForm);
+        alert('Rettssak lagt til!');
+      }
+      
+      setCaseForm({
+        player: '',
+        reason: '',
+        fine: 0,
+        likelihood: 0.5,
+        round: '',
+      });
+    } catch (error) {
+      alert('Feil ved lagring av rettssak: ' + error.message);
     }
-    
-    setCaseForm({
-      player: '',
-      reason: '',
-      fine: 0,
-      likelihood: 0.5,
-      round: '',
-    });
   };
 
   const handleEditCase = (caseItem) => {
@@ -664,35 +676,40 @@ function AdminPage() {
     }
   };
 
-  const handleAddPlayer = () => {
+  const handleAddPlayer = async () => {
     if (!playerForm.name || !playerForm.number || !playerForm.position) {
       alert('Fyll inn navn, nummer og posisjon');
       return;
     }
 
     setUploadingPlayer(true);
-    let imageData = '🦁';
+    try {
+      let imageData = '🦁';
 
-    if (playerForm.imagePreview) {
-      imageData = playerForm.imagePreview;
+      if (playerForm.imagePreview) {
+        imageData = playerForm.imagePreview;
+      }
+
+      await addPlayer({
+        name: playerForm.name,
+        number: playerForm.number,
+        position: playerForm.position,
+        image: imageData,
+      });
+
+      setPlayerForm({
+        name: '',
+        number: '',
+        position: '',
+        image: null,
+        imagePreview: null,
+      });
+      alert('Spiller lagt til!');
+    } catch (error) {
+      alert('Feil ved lagring av spiller: ' + error.message);
+    } finally {
+      setUploadingPlayer(false);
     }
-
-    addPlayer({
-      name: playerForm.name,
-      number: playerForm.number,
-      position: playerForm.position,
-      image: imageData,
-    });
-
-    setPlayerForm({
-      name: '',
-      number: '',
-      position: '',
-      image: null,
-      imagePreview: null,
-    });
-    setUploadingPlayer(false);
-    alert('Spiller lagt til!');
   };
 
   return (
@@ -784,9 +801,13 @@ function AdminPage() {
                 <div className="name">{player.name}</div>
                 <div className="number">#{player.number}</div>
                 <div className="position">{player.position}</div>
-                <DeleteButton danger className="delete-btn" onClick={() => {
-                  deletePlayer(player.id);
-                  alert('Spiller slettet!');
+                <DeleteButton danger className="delete-btn" onClick={async () => {
+                  try {
+                    await deletePlayer(player.id);
+                    alert('Spiller slettet!');
+                  } catch (error) {
+                    alert('Feil ved sletting av spiller: ' + error.message);
+                  }
                 }}>Slett</DeleteButton>
               </div>
             </PlayerCard>
@@ -959,9 +980,13 @@ function AdminPage() {
                 </div>
                 <div className="actions">
                   <DeleteButton onClick={() => handleEditMatch(match)}>Rediger</DeleteButton>
-                  <DeleteButton danger onClick={() => {
-                    deleteMatch(match.id);
-                    alert('Kamp slettet!');
+                  <DeleteButton danger onClick={async () => {
+                    try {
+                      await deleteMatch(match.id);
+                      alert('Kamp slettet!');
+                    } catch (error) {
+                      alert('Feil ved sletting av kamp: ' + error.message);
+                    }
                   }}>Slett</DeleteButton>
                 </div>
               </ListItem>
@@ -1045,9 +1070,13 @@ function AdminPage() {
                 </div>
                 <div className="actions">
                   <DeleteButton onClick={() => handleEditCase(caseItem)}>Rediger</DeleteButton>
-                  <DeleteButton danger onClick={() => {
-                    deleteCase(caseItem.id);
-                    alert('Rettssak slettet!');
+                  <DeleteButton danger onClick={async () => {
+                    try {
+                      await deleteCase(caseItem.id);
+                      alert('Rettssak slettet!');
+                    } catch (error) {
+                      alert('Feil ved sletting av rettssak: ' + error.message);
+                    }
                   }}>Slett</DeleteButton>
                 </div>
               </ListItem>
