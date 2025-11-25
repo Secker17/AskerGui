@@ -477,6 +477,7 @@ const PlayerCard = styled.div`
 `;
 
 function AdminPage() {
+  // Alle React Hooks må kalles først
   const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData } = useContext(DataContext);
   const [activeTab, setActiveTab] = useState('players');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -487,25 +488,68 @@ function AdminPage() {
     date: '',
     time: '',
     opponent: '',
-    logo: '🦁',
     location: '',
+    logo: '🦁'
   });
   const [caseForm, setCaseForm] = useState({
     player: '',
     reason: '',
-    fine: 0,
+    fine: '',
     likelihood: 0.5,
-    round: '',
+    round: ''
   });
   const [playerForm, setPlayerForm] = useState({
     name: '',
     number: '',
     position: '',
-    image: null,
-    imagePreview: null,
+    image: '🦁'
   });
+  const [motmImagePreview, setMotmImagePreview] = useState(null);
   const [uploadingPlayer, setUploadingPlayer] = useState(false);
-  const [motmImagePreview, setMotmImagePreview] = useState(motm.image);
+
+  // Sjekk om bruker er på PC/desktop
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+  
+  if (isMobile) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
+        color: 'white',
+        textAlign: 'center',
+        padding: '2rem',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>📱 PC Kreves</h1>
+          <p style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '2rem' }}>
+            Admin-siden er kun tilgjengelig på PC/desktop.
+          </p>
+          <p style={{ opacity: 0.6 }}>
+            Vennligst bruk en datamaskin for å administrere innhold.
+          </p>
+          <a 
+            href="/" 
+            style={{
+              display: 'inline-block',
+              marginTop: '2rem',
+              padding: '1rem 2rem',
+              background: 'rgba(255,255,255,0.1)',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.2)'
+            }}
+          >
+            Tilbake til hovedsiden
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const closeSidebar = () => setSidebarOpen(false);
   const selectTab = (tab) => {
