@@ -481,14 +481,13 @@ function AdminPage() {
   const [activeTab, setActiveTab] = useState('players');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [motmForm, setMotmForm] = useState(motm);
+  const [editingMatch, setEditingMatch] = useState(null);
   const [matchForm, setMatchForm] = useState({
     date: '',
     time: '',
     opponent: '',
-    logo: '🏐',
+    logo: '🦁',
     location: '',
-    competition: 'NM Serien',
-    tickets: 'Tilgjengelig',
   });
   const [caseForm, setCaseForm] = useState({
     player: '',
@@ -545,17 +544,50 @@ function AdminPage() {
       alert('Fyll inn dato og motstander');
       return;
     }
-    addMatch(matchForm);
+    
+    if (editingMatch) {
+      // Update existing match
+      const updatedMatch = { ...matchForm, id: editingMatch.id };
+      deleteMatch(editingMatch.id);
+      addMatch(updatedMatch);
+      setEditingMatch(null);
+      alert('Kamp oppdatert!');
+    } else {
+      // Add new match
+      addMatch(matchForm);
+      alert('Kamp lagt til!');
+    }
+    
     setMatchForm({
       date: '',
       time: '',
       opponent: '',
-      logo: '🏐',
+      logo: '🦁',
       location: '',
-      competition: 'NM Serien',
-      tickets: 'Tilgjengelig',
     });
-    alert('Kamp lagt til!');
+  };
+
+  const handleEditMatch = (match) => {
+    setEditingMatch(match);
+    setMatchForm({
+      date: match.date,
+      time: match.time,
+      opponent: match.opponent,
+      logo: match.logo,
+      location: match.location,
+    });
+    setActiveTab('matches');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMatch(null);
+    setMatchForm({
+      date: '',
+      time: '',
+      opponent: '',
+      logo: '🦁',
+      location: '',
+    });
   };
 
   const handleCaseChange = (e) => {
@@ -603,7 +635,7 @@ function AdminPage() {
     }
 
     setUploadingPlayer(true);
-    let imageData = '🏐';
+    let imageData = '🦁';
 
     if (playerForm.imagePreview) {
       imageData = playerForm.imagePreview;
@@ -846,25 +878,23 @@ function AdminPage() {
         {activeTab === 'matches' && (
       <Grid>
         <Section>
-          <SectionTitle>Legg til Kamp</SectionTitle>
+          <SectionTitle>{editingMatch ? 'Rediger Kamp' : 'Legg til Kamp'}</SectionTitle>
           <FormGroup>
             <Label>Dato</Label>
             <Input
-              type="text"
+              type="date"
               name="date"
               value={matchForm.date}
               onChange={handleMatchChange}
-              placeholder="F.eks. 28. Nov 2025"
             />
           </FormGroup>
           <FormGroup>
             <Label>Tid</Label>
             <Input
-              type="text"
+              type="time"
               name="time"
               value={matchForm.time}
               onChange={handleMatchChange}
-              placeholder="F.eks. 19:00"
             />
           </FormGroup>
           <FormGroup>
@@ -897,23 +927,8 @@ function AdminPage() {
               placeholder="F.eks. Asker Idrettshall"
             />
           </FormGroup>
-          <FormGroup>
-            <Label>Turnering</Label>
-            <Select name="competition" value={matchForm.competition} onChange={handleMatchChange}>
-              <option>NM Serien</option>
-              <option>Cupkamp</option>
-              <option>Vennskapskamp</option>
-            </Select>
-          </FormGroup>
-          <FormGroup>
-            <Label>Billetter</Label>
-            <Select name="tickets" value={matchForm.tickets} onChange={handleMatchChange}>
-              <option>Tilgjengelig</option>
-              <option>Begrenset</option>
-              <option>Utsolgt</option>
-            </Select>
-          </FormGroup>
-          <Button onClick={handleAddMatch}>Legg til Kamp</Button>
+          {editingMatch && <Button secondary onClick={handleCancelEdit}>Avbryt</Button>}
+          <Button onClick={handleAddMatch}>{editingMatch ? 'Oppdater Kamp' : 'Legg til Kamp'}</Button>
         </Section>
       </Grid>
         )}
@@ -925,9 +940,10 @@ function AdminPage() {
             {matches.map(match => (
               <ListItem key={match.id}>
                 <div className="info">
-                  {match.date} - {match.opponent} ({match.competition})
+                  {match.date} - {match.opponent} {match.time && `(${match.time})`}
                 </div>
                 <div className="actions">
+                  <DeleteButton onClick={() => handleEditMatch(match)}>Rediger</DeleteButton>
                   <DeleteButton danger onClick={() => {
                     deleteMatch(match.id);
                     alert('Kamp slettet!');
