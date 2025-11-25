@@ -815,9 +815,12 @@ function AdminPage() {
                 <div className="position">{player.position}</div>
                 <DeleteButton danger className="delete-btn" onClick={async () => {
                   try {
+                    console.log('Deleting player:', player.id);
                     await deletePlayer(player.id);
+                    console.log('Player deleted successfully');
                     alert('Spiller slettet!');
                   } catch (error) {
+                    console.error('Delete error:', error);
                     alert('Feil ved sletting av spiller: ' + error.message);
                   }
                 }}>Slett</DeleteButton>

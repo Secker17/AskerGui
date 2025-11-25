@@ -34,8 +34,7 @@ export function DataProvider({ children }) {
       if (data) {
         setMotm(data);
       } else {
-        // Initialize with default if no data exists
-        set(motmRef, defaultMotm);
+        setMotm(defaultMotm);
       }
     });
 
@@ -44,14 +43,10 @@ export function DataProvider({ children }) {
     const unsubscribeMatches = onValue(matchesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const matchesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        const matchesArray = Object.keys(data).map(key => ({ ...data[key], id: key }));
         setMatches(matchesArray);
       } else {
-        // Initialize with defaults if no data exists
-        defaultMatches.forEach(match => {
-          const newMatchRef = push(matchesRef);
-          set(newMatchRef, match);
-        });
+        setMatches([]);
       }
     });
 
@@ -60,14 +55,10 @@ export function DataProvider({ children }) {
     const unsubscribeCases = onValue(casesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const casesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        const casesArray = Object.keys(data).map(key => ({ ...data[key], id: key }));
         setCases(casesArray);
       } else {
-        // Initialize with defaults if no data exists
-        defaultCases.forEach(caseItem => {
-          const newCaseRef = push(casesRef);
-          set(newCaseRef, caseItem);
-        });
+        setCases([]);
       }
     });
 
@@ -76,14 +67,10 @@ export function DataProvider({ children }) {
     const unsubscribePlayers = onValue(playersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const playersArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        const playersArray = Object.keys(data).map(key => ({ ...data[key], id: key }));
         setPlayers(playersArray);
       } else {
-        // Initialize with defaults if no data exists
-        defaultPlayers.forEach(player => {
-          const newPlayerRef = push(playersRef);
-          set(newPlayerRef, player);
-        });
+        setPlayers([]);
       }
     });
 
