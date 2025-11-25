@@ -512,7 +512,7 @@ function HomePage() {
             {logo ? (
               <img src={logo} alt="Team Logo" />
             ) : (
-              <div className="placeholder">🏐</div>
+              <div className="placeholder">🦁</div>
             )}
           </LogoContainer>
           <Title>Asker</Title>

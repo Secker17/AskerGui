@@ -815,16 +815,6 @@ function AdminPage() {
             />
           </FormGroup>
           <FormGroup>
-            <Label>Runde</Label>
-            <Input
-              type="text"
-              name="round"
-              value={motmForm.round}
-              onChange={handleMotmChange}
-              placeholder="F.eks. Runde 12"
-            />
-          </FormGroup>
-          <FormGroup>
             <Label>Mål</Label>
             <Input
               type="number"
@@ -834,23 +824,12 @@ function AdminPage() {
             />
           </FormGroup>
           <FormGroup>
-            <Label>Assist</Label>
+            <Label>Reddninger</Label>
             <Input
               type="number"
-              name="assists"
-              value={motmForm.assists}
+              name="saves"
+              value={motmForm.saves || 0}
               onChange={handleMotmChange}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Treffsikkerhet (%)</Label>
-            <Input
-              type="number"
-              name="accuracy"
-              value={motmForm.accuracy}
-              onChange={handleMotmChange}
-              min="0"
-              max="100"
             />
           </FormGroup>
           <FormGroup>
