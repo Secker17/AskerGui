@@ -5,11 +5,11 @@ import { DataContext } from '../context/DataContext';
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 3rem;
   min-height: 80vh;
 
   @media (min-width: 768px) {
-    padding: 3rem 2rem;
+    padding: 3rem 2rem 4rem;
   }
 `;
 
@@ -50,114 +50,171 @@ const MatchesGrid = styled.div`
   gap: 1.5rem;
 
   @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     gap: 2rem;
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
   }
 `;
 
-const MatchCard = styled.div`
-  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+const MatchCard = styled.article`
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-  animation: slideUp 0.5s ease-out;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 
   &:hover {
     transform: translateY(-6px);
-    border-color: rgba(255,255,255,0.15);
-    box-shadow: 0 12px 40px rgba(255,255,255,0.1);
-{{ ... }}
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+    border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+  }
 `;
 
-const MatchHeader = styled.div`
-  padding: 0.8rem 1.2rem;
+const MatchHeader = styled.header`
+  padding: 1rem 1.4rem;
   text-align: center;
-  background: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.3);
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.9rem;
-  color: #fff;
+  font-size: 0.95rem;
   font-weight: 700;
+  color: #f0f0f0;
+
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+  }
 `;
 
 const MatchBody = styled.div`
-  padding: 1.5rem 1rem;
+  padding: 1.8rem 1.4rem;
 `;
 
-const TeamsContainer = styled.div`
+const TeamsGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 1rem;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
 `;
 
 const Team = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
+`;
+
+const TeamLogo = styled.div`
+  font-size: 3rem;
+
+  @media (max-width: 480px) {
+    font-size: 2.6rem;
+  }
 `;
 
 const TeamName = styled.h3`
-  font-size: 1.1rem;
-  color: #f1f1f1;
-  margin: 0;
+  font-size: 1.2rem;
+  color: #ffffff;
   font-weight: 800;
-  line-height: 1.3;
+  margin: 0;
+  letter-spacing: 0.4px;
+
+  @media (max-width: 480px) {
+    font-size: 1.05rem;
+  }
 `;
 
 const VS = styled.div`
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #fff;
-  margin: 0 1rem;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #ff9560;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+
+  @media (max-width: 480px) {
+    order: -1;
+  }
 `;
 
-const Location = styled.div`
-  text-align: center;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+const MatchFooter = styled.footer`
+  padding: 1rem 1.4rem;
+  background: rgba(0,0,0,0.25);
   border-top: 1px solid rgba(255,255,255,0.08);
-  color: #bdbdbd;
-  font-size: 0.9rem;
-  font-weight: 600;
-`; = useContext(DataContext);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: #c9c9c9;
+  font-size: 0.95rem;
 
-  const formatDate = (dateString) => {
-    if (!dateString) return { day: '', month: '' };
-    const date = new Date(dateString);
-    const day = date.getDate();
-{{ ... }}
+  span {
+    display: block;
+  }
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+
+    span {
+      display: inline;
+    }
+  }
+`;
+
+const formatDate = (value) => {
+  if (!value) return 'Dato kunngjøres senere';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('nb-NO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  });
+};
+
+const formatTime = (value) => (value ? value : 'Tid TBD');
+
+const formatLocation = (value) => (value ? value : 'Lokasjon annonseres senere');
+
+function UpcomingMatchesPage() {
+  const { matches } = useContext(DataContext);
+
+  return (
+    <Container>
+      <PageTitle>📅 Kommende Kamper</PageTitle>
+      <PageSubtitle>Se alle kommende kamper for Asker/Gui</PageSubtitle>
 
       <MatchesGrid>
         {matches.map(match => (
           <MatchCard key={match.id}>
-            <MatchHeader>
-              {new Date(match.date).toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })} • {match.time}
-            </MatchHeader>
+            <MatchHeader>{formatDate(match.date)}</MatchHeader>
+
             <MatchBody>
-              <TeamsContainer>
+              <TeamsGrid>
                 <Team>
                   <TeamLogo>🏐</TeamLogo>
                   <TeamName>Asker/Gui</TeamName>
                 </Team>
+
                 <VS>VS</VS>
+
                 <Team>
-                  <TeamLogo>{match.logo}</TeamLogo>
+                  <TeamLogo>{match.logo || '🤝'}</TeamLogo>
                   <TeamName>{match.opponent}</TeamName>
                 </Team>
-              </TeamsContainer>
-              <Location>📍 {match.location}</Location>
+              </TeamsGrid>
             </MatchBody>
+
+            <MatchFooter>
+              <span>{formatTime(match.time)}</span>
+              <span>📍 {formatLocation(match.location)}</span>
+            </MatchFooter>
           </MatchCard>
         ))}
       </MatchesGrid>
@@ -165,3 +222,4 @@ const Location = styled.div`
   );
 }
 
+export default UpcomingMatchesPage;
