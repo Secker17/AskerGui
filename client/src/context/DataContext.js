@@ -1,4 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { ref, onValue, set, remove, push } from 'firebase/database';
+import { database } from '../firebase';
 
 export const DataContext = createContext();
 
@@ -6,20 +8,18 @@ const defaultMotm = {
   player: 'Magnus Andersen',
   position: 'Høyre Fløy',
   number: 7,
-  round: 'Runde 12',
   goals: 11,
-  assists: 3,
-  accuracy: 92,
+  saves: 8,
   image: '⭐',
 };
 
 const defaultMatches = [
-  { id: 1, date: '28. Nov 2025', time: '19:00', opponent: 'Kolbotn IL', logo: '🏐', location: 'Asker Idrettshall', competition: 'NM Serien', tickets: 'Tilgjengelig' },
-  { id: 2, date: '2. Des 2025', time: '18:30', opponent: 'Elverum HB', logo: '⚽', location: 'Elverum Arena', competition: 'NM Serien', tickets: 'Begrenset' },
-  { id: 3, date: '5. Des 2025', time: '20:00', opponent: 'Drammen HB', logo: '🎯', location: 'Drammen Hallen', competition: 'NM Serien', tickets: 'Utsolgt' },
-  { id: 4, date: '9. Des 2025', time: '19:00', opponent: 'Fredrikstad IL', logo: '🏆', location: 'Asker Idrettshall', competition: 'Cupkamp', tickets: 'Tilgjengelig' },
-  { id: 5, date: '12. Des 2025', time: '18:00', opponent: 'Sandefjord HB', logo: '⭐', location: 'Sandefjord Idrettshall', competition: 'NM Serien', tickets: 'Tilgjengelig' },
-  { id: 6, date: '16. Des 2025', time: '19:30', opponent: 'Moss HB', logo: '🎪', location: 'Asker Idrettshall', competition: 'NM Serien', tickets: 'Begrenset' },
+  { id: 1, date: '2025-11-28', time: '19:00', opponent: 'Kolbotn IL', logo: '🦁', location: 'Asker Idrettshall' },
+  { id: 2, date: '2025-12-02', time: '18:30', opponent: 'Elverum HB', logo: '🦁', location: 'Elverum Arena' },
+  { id: 3, date: '2025-12-05', time: '20:00', opponent: 'Drammen HB', logo: '🦁', location: 'Drammen Hallen' },
+  { id: 4, date: '2025-12-09', time: '19:00', opponent: 'Fredrikstad IL', logo: '🦁', location: 'Asker Idrettshall' },
+  { id: 5, date: '2025-12-12', time: '18:00', opponent: 'Sandefjord HB', logo: '🦁', location: 'Sandefjord Idrettshall' },
+  { id: 6, date: '2025-12-16', time: '19:30', opponent: 'Moss HB', logo: '🦁', location: 'Asker Idrettshall' },
 ];
 
 const defaultCases = [
@@ -31,11 +31,11 @@ const defaultCases = [
 ];
 
 const defaultPlayers = [
-  { id: 1, name: 'Magnus Andersen', number: 7, position: 'Høyre Fløy', image: '⭐' },
-  { id: 2, name: 'Spiller A', number: 1, position: 'Keeper', image: '🥅' },
-  { id: 3, name: 'Spiller B', number: 2, position: 'Venstre Fløy', image: '🏐' },
-  { id: 4, name: 'Spiller C', number: 3, position: 'Sentral', image: '💪' },
-  { id: 5, name: 'Spiller D', number: 4, position: 'Høyre Back', image: '🎯' },
+  { id: 1, name: 'Magnus Andersen', number: 7, position: 'Høyre Fløy', image: '🦁' },
+  { id: 2, name: 'Spiller A', number: 1, position: 'Keeper', image: '🦁' },
+  { id: 3, name: 'Spiller B', number: 2, position: 'Venstre Fløy', image: '🦁' },
+  { id: 4, name: 'Spiller C', number: 3, position: 'Sentral', image: '🦁' },
+  { id: 5, name: 'Spiller D', number: 4, position: 'Høyre Back', image: '🦁' },
 ];
 
 export function DataProvider({ children }) {
@@ -44,92 +44,127 @@ export function DataProvider({ children }) {
   const [cases, setCases] = useState(defaultCases);
   const [players, setPlayers] = useState(defaultPlayers);
 
+  // Firebase listeners
   useEffect(() => {
-    const savedMotm = localStorage.getItem('motm');
-    const savedMatches = localStorage.getItem('matches');
-    const savedCases = localStorage.getItem('cases');
-    const savedPlayers = localStorage.getItem('players');
+    // Listen to MOTM
+    const motmRef = ref(database, 'motm');
+    const unsubscribeMotm = onValue(motmRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setMotm(data);
+      } else {
+        // Initialize with default if no data exists
+        set(motmRef, defaultMotm);
+      }
+    });
 
-    if (savedMotm) setMotm(JSON.parse(savedMotm));
-    if (savedMatches) setMatches(JSON.parse(savedMatches));
-    if (savedCases) setCases(JSON.parse(savedCases));
-    if (savedPlayers) setPlayers(JSON.parse(savedPlayers));
+    // Listen to Matches
+    const matchesRef = ref(database, 'matches');
+    const unsubscribeMatches = onValue(matchesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const matchesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        setMatches(matchesArray);
+      } else {
+        // Initialize with defaults if no data exists
+        defaultMatches.forEach(match => {
+          push(matchesRef, match);
+        });
+      }
+    });
+
+    // Listen to Cases
+    const casesRef = ref(database, 'cases');
+    const unsubscribeCases = onValue(casesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const casesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        setCases(casesArray);
+      } else {
+        // Initialize with defaults if no data exists
+        defaultCases.forEach(caseItem => {
+          push(casesRef, caseItem);
+        });
+      }
+    });
+
+    // Listen to Players
+    const playersRef = ref(database, 'players');
+    const unsubscribePlayers = onValue(playersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const playersArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        setPlayers(playersArray);
+      } else {
+        // Initialize with defaults if no data exists
+        defaultPlayers.forEach(player => {
+          push(playersRef, player);
+        });
+      }
+    });
+
+    // Cleanup listeners
+    return () => {
+      unsubscribeMotm();
+      unsubscribeMatches();
+      unsubscribeCases();
+      unsubscribePlayers();
+    };
   }, []);
 
   const updateMotm = (newMotm) => {
     setMotm(newMotm);
-    localStorage.setItem('motm', JSON.stringify(newMotm));
-  };
-
-  const updateMatches = (newMatches) => {
-    setMatches(newMatches);
-    localStorage.setItem('matches', JSON.stringify(newMatches));
+    set(ref(database, 'motm'), newMotm);
   };
 
   const addMatch = (match) => {
-    const newMatch = { ...match, id: Math.max(...matches.map(m => m.id), 0) + 1 };
-    const updated = [...matches, newMatch];
-    updateMatches(updated);
+    const newMatchRef = push(ref(database, 'matches'));
+    const newMatch = { ...match, id: newMatchRef.key };
+    set(newMatchRef, newMatch);
   };
 
   const deleteMatch = (id) => {
-    const updated = matches.filter(m => m.id !== id);
-    updateMatches(updated);
+    remove(ref(database, `matches/${id}`));
   };
 
   const updateMatch = (id, updatedMatch) => {
-    const updated = matches.map(m => m.id === id ? { ...m, ...updatedMatch } : m);
-    updateMatches(updated);
-  };
-
-  const updateCases = (newCases) => {
-    setCases(newCases);
-    localStorage.setItem('cases', JSON.stringify(newCases));
+    set(ref(database, `matches/${id}`), updatedMatch);
   };
 
   const addCase = (caseItem) => {
-    const newCase = { ...caseItem, id: Math.max(...cases.map(c => c.id), 0) + 1 };
-    const updated = [...cases, newCase];
-    updateCases(updated);
+    const newCaseRef = push(ref(database, 'cases'));
+    const newCase = { ...caseItem, id: newCaseRef.key };
+    set(newCaseRef, newCase);
   };
 
   const deleteCase = (id) => {
-    const updated = cases.filter(c => c.id !== id);
-    updateCases(updated);
+    remove(ref(database, `cases/${id}`));
   };
 
   const updateCase = (id, updatedCase) => {
-    const updated = cases.map(c => c.id === id ? { ...c, ...updatedCase } : c);
-    updateCases(updated);
-  };
-
-  const updatePlayers = (newPlayers) => {
-    setPlayers(newPlayers);
-    localStorage.setItem('players', JSON.stringify(newPlayers));
+    set(ref(database, `cases/${id}`), updatedCase);
   };
 
   const addPlayer = (player) => {
-    const newPlayer = { ...player, id: Math.max(...players.map(p => p.id), 0) + 1 };
-    const updated = [...players, newPlayer];
-    updatePlayers(updated);
+    const newPlayerRef = push(ref(database, 'players'));
+    const newPlayer = { ...player, id: newPlayerRef.key };
+    set(newPlayerRef, newPlayer);
   };
 
   const deletePlayer = (id) => {
-    const updated = players.filter(p => p.id !== id);
-    updatePlayers(updated);
+    remove(ref(database, `players/${id}`));
   };
 
   const updatePlayer = (id, updatedPlayer) => {
-    const updated = players.map(p => p.id === id ? { ...p, ...updatedPlayer } : p);
-    updatePlayers(updated);
+    set(ref(database, `players/${id}`), updatedPlayer);
   };
 
   return (
     <DataContext.Provider value={{
       motm, updateMotm,
-      matches, updateMatches, addMatch, deleteMatch, updateMatch,
-      cases, updateCases, addCase, deleteCase, updateCase,
-      players, updatePlayers, addPlayer, deletePlayer, updatePlayer,
+      matches, addMatch, deleteMatch, updateMatch,
+      cases, addCase, deleteCase, updateCase,
+      players, addPlayer, deletePlayer, updatePlayer,
     }}>
       {children}
     </DataContext.Provider>

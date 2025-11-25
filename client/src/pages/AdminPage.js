@@ -482,6 +482,7 @@ function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [motmForm, setMotmForm] = useState(motm);
   const [editingMatch, setEditingMatch] = useState(null);
+  const [editingCase, setEditingCase] = useState(null);
   const [matchForm, setMatchForm] = useState({
     date: '',
     time: '',
@@ -600,7 +601,20 @@ function AdminPage() {
       alert('Fyll inn spiller og årsak');
       return;
     }
-    addCase(caseForm);
+    
+    if (editingCase) {
+      // Update existing case
+      const updatedCase = { ...caseForm, id: editingCase.id };
+      deleteCase(editingCase.id);
+      addCase(updatedCase);
+      setEditingCase(null);
+      alert('Rettssak oppdatert!');
+    } else {
+      // Add new case
+      addCase(caseForm);
+      alert('Rettssak lagt til!');
+    }
+    
     setCaseForm({
       player: '',
       reason: '',
@@ -608,7 +622,29 @@ function AdminPage() {
       likelihood: 0.5,
       round: '',
     });
-    alert('Rettssak lagt til!');
+  };
+
+  const handleEditCase = (caseItem) => {
+    setEditingCase(caseItem);
+    setCaseForm({
+      player: caseItem.player,
+      reason: caseItem.reason,
+      fine: caseItem.fine,
+      likelihood: caseItem.likelihood,
+      round: caseItem.round,
+    });
+    setActiveTab('cases');
+  };
+
+  const handleCancelEditCase = () => {
+    setEditingCase(null);
+    setCaseForm({
+      player: '',
+      reason: '',
+      fine: 0,
+      likelihood: 0.5,
+      round: '',
+    });
   };
 
   const handlePlayerChange = (e) => {
@@ -934,6 +970,70 @@ function AdminPage() {
         </Section>
         )}
 
+        {activeTab === 'cases' && (
+      <Grid>
+        <Section>
+          <SectionTitle>{editingCase ? 'Rediger Rettssak' : 'Legg til Rettssak'}</SectionTitle>
+          <FormGroup>
+            <Label>Spiller</Label>
+            <Input
+              type="text"
+              name="player"
+              value={caseForm.player}
+              onChange={handleCaseChange}
+              placeholder="F.eks. Magnus Andersen"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Årsak</Label>
+            <Input
+              type="text"
+              name="reason"
+              value={caseForm.reason}
+              onChange={handleCaseChange}
+              placeholder="F.eks. For sent til trening"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Bøtebeløp (kr)</Label>
+            <Input
+              type="number"
+              name="fine"
+              value={caseForm.fine}
+              onChange={handleCaseChange}
+              min="0"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Sannsynlighet for rettssak (%)</Label>
+            <Input
+              type="number"
+              name="likelihood"
+              value={Math.round(caseForm.likelihood * 100)}
+              onChange={(e) => {
+                const value = Math.max(0, Math.min(100, Number(e.target.value)));
+                setCaseForm({ ...caseForm, likelihood: value / 100 });
+              }}
+              min="0"
+              max="100"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Runde</Label>
+            <Input
+              type="text"
+              name="round"
+              value={caseForm.round}
+              onChange={handleCaseChange}
+              placeholder="F.eks. Runde 12"
+            />
+          </FormGroup>
+          {editingCase && <Button secondary onClick={handleCancelEditCase}>Avbryt</Button>}
+          <Button onClick={handleAddCase}>{editingCase ? 'Oppdater Rettssak' : 'Legg til Rettssak'}</Button>
+        </Section>
+      </Grid>
+        )}
+
         {activeTab === 'caseList' && (
         <Section>
           <SectionTitle>Rettsaker ({cases.length})</SectionTitle>
@@ -944,6 +1044,7 @@ function AdminPage() {
                   {caseItem.player} - {caseItem.reason} ({Math.round(caseItem.likelihood * 100)}%)
                 </div>
                 <div className="actions">
+                  <DeleteButton onClick={() => handleEditCase(caseItem)}>Rediger</DeleteButton>
                   <DeleteButton danger onClick={() => {
                     deleteCase(caseItem.id);
                     alert('Rettssak slettet!');
