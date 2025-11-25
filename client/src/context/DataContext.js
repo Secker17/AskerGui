@@ -13,30 +13,11 @@ const defaultMotm = {
   image: '⭐',
 };
 
-const defaultMatches = [
-  { id: 1, date: '2025-11-28', time: '19:00', opponent: 'Kolbotn IL', logo: '🦁', location: 'Asker Idrettshall' },
-  { id: 2, date: '2025-12-02', time: '18:30', opponent: 'Elverum HB', logo: '🦁', location: 'Elverum Arena' },
-  { id: 3, date: '2025-12-05', time: '20:00', opponent: 'Drammen HB', logo: '🦁', location: 'Drammen Hallen' },
-  { id: 4, date: '2025-12-09', time: '19:00', opponent: 'Fredrikstad IL', logo: '🦁', location: 'Asker Idrettshall' },
-  { id: 5, date: '2025-12-12', time: '18:00', opponent: 'Sandefjord HB', logo: '🦁', location: 'Sandefjord Idrettshall' },
-  { id: 6, date: '2025-12-16', time: '19:30', opponent: 'Moss HB', logo: '🦁', location: 'Asker Idrettshall' },
-];
+const defaultMatches = [];
 
-const defaultCases = [
-  { id: 1, player: 'Spiller A', reason: 'Uforsiktig feiring', fine: 12000, likelihood: 0.45, round: 'Runde 9' },
-  { id: 2, player: 'Spiller B', reason: 'Sen takling', fine: 35000, likelihood: 0.72, round: 'Runde 10' },
-  { id: 3, player: 'Spiller C', reason: 'Mouthing mot dommer', fine: 8000, likelihood: 0.25, round: 'Runde 7' },
-  { id: 4, player: 'Spiller D', reason: 'Forsinkelse til kampstart', fine: 15000, likelihood: 0.31, round: 'Runde 6' },
-  { id: 5, player: 'Spiller E', reason: 'Upassende feiring', fine: 28000, likelihood: 0.61, round: 'Runde 8' },
-];
+const defaultCases = [];
 
-const defaultPlayers = [
-  { id: 1, name: 'Magnus Andersen', number: 7, position: 'Høyre Fløy', image: '🦁' },
-  { id: 2, name: 'Spiller A', number: 1, position: 'Keeper', image: '🦁' },
-  { id: 3, name: 'Spiller B', number: 2, position: 'Venstre Fløy', image: '🦁' },
-  { id: 4, name: 'Spiller C', number: 3, position: 'Sentral', image: '🦁' },
-  { id: 5, name: 'Spiller D', number: 4, position: 'Høyre Back', image: '🦁' },
-];
+const defaultPlayers = [];
 
 export function DataProvider({ children }) {
   const [motm, setMotm] = useState(defaultMotm);
@@ -219,12 +200,25 @@ export function DataProvider({ children }) {
     }
   };
 
+  const clearAllData = async () => {
+    try {
+      await remove(ref(database, 'matches'));
+      await remove(ref(database, 'cases'));
+      await remove(ref(database, 'players'));
+      return true;
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      throw error;
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       motm, updateMotm,
       matches, addMatch, deleteMatch, updateMatch,
       cases, addCase, deleteCase, updateCase,
       players, addPlayer, deletePlayer, updatePlayer,
+      clearAllData,
     }}>
       {children}
     </DataContext.Provider>

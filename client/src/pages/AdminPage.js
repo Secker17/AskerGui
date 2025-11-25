@@ -477,7 +477,7 @@ const PlayerCard = styled.div`
 `;
 
 function AdminPage() {
-  const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer } = useContext(DataContext);
+  const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData } = useContext(DataContext);
   const [activeTab, setActiveTab] = useState('players');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [motmForm, setMotmForm] = useState(motm);
@@ -726,6 +726,18 @@ function AdminPage() {
         <SidebarTitle style={{ marginTop: '2rem' }}>Lister</SidebarTitle>
         <SidebarButton active={activeTab === 'matchList'} onClick={() => selectTab('matchList')}>📋 Alle Kamper</SidebarButton>
         <SidebarButton active={activeTab === 'caseList'} onClick={() => selectTab('caseList')}>📋 Alle Rettsaker</SidebarButton>
+
+        <SidebarTitle style={{ marginTop: '2rem' }}>Verktøy</SidebarTitle>
+        <SidebarButton danger onClick={async () => {
+          if (window.confirm('Er du sikker? Dette sletter ALLE kamper, rettsaker og spillere!')) {
+            try {
+              await clearAllData();
+              alert('All data slettet!');
+            } catch (error) {
+              alert('Feil ved sletting: ' + error.message);
+            }
+          }
+        }} style={{ background: '#ff4444', color: '#fff' }}>🗑️ Slett Alt Data</SidebarButton>
       </Sidebar>
 
       <Container>
