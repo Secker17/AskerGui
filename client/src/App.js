@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import HomePage from './pages/HomePage';
 import UpcomingMatchesPage from './pages/UpcomingMatchesPage';
-import CasesPage from './pages/CasesPage';
 import AdminPage from './pages/AdminPage';
 import { DataProvider } from './context/DataContext';
 import './App.css';
@@ -188,7 +187,7 @@ function App() {
           <NavLinks open={menuOpen}>
             <NavLink to="/" onClick={closeMenu}>Hjem</NavLink>
             <NavLink to="/matches" onClick={closeMenu}>Kamper</NavLink>
-            <NavLink to="/cases" onClick={closeMenu}>Rettsaker</NavLink>
+            <NavLink to="https://domstol.vercel.app/" onClick={closeMenu}>Rettsaker</NavLink>
             <NavLink to="/admin" onClick={closeMenu}>⚙️ Admin</NavLink>
           </NavLinks>
         </NavBar>
@@ -196,7 +195,6 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/matches" element={<UpcomingMatchesPage />} />
-          <Route path="/cases" element={<CasesPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
 
