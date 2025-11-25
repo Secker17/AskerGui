@@ -68,7 +68,8 @@ export function DataProvider({ children }) {
       } else {
         // Initialize with defaults if no data exists
         defaultMatches.forEach(match => {
-          push(matchesRef, match);
+          const newMatchRef = push(matchesRef);
+          set(newMatchRef, match);
         });
       }
     });
@@ -83,7 +84,8 @@ export function DataProvider({ children }) {
       } else {
         // Initialize with defaults if no data exists
         defaultCases.forEach(caseItem => {
-          push(casesRef, caseItem);
+          const newCaseRef = push(casesRef);
+          set(newCaseRef, caseItem);
         });
       }
     });
@@ -98,7 +100,8 @@ export function DataProvider({ children }) {
       } else {
         // Initialize with defaults if no data exists
         defaultPlayers.forEach(player => {
-          push(playersRef, player);
+          const newPlayerRef = push(playersRef);
+          set(newPlayerRef, player);
         });
       }
     });
@@ -119,11 +122,11 @@ export function DataProvider({ children }) {
 
   const addMatch = (match) => {
     const newMatchRef = push(ref(database, 'matches'));
-    const newMatch = { ...match, id: newMatchRef.key };
-    set(newMatchRef, newMatch);
+    set(newMatchRef, match);
   };
 
   const deleteMatch = (id) => {
+    console.log('Deleting match with ID:', id);
     remove(ref(database, `matches/${id}`));
   };
 
@@ -133,11 +136,11 @@ export function DataProvider({ children }) {
 
   const addCase = (caseItem) => {
     const newCaseRef = push(ref(database, 'cases'));
-    const newCase = { ...caseItem, id: newCaseRef.key };
-    set(newCaseRef, newCase);
+    set(newCaseRef, caseItem);
   };
 
   const deleteCase = (id) => {
+    console.log('Deleting case with ID:', id);
     remove(ref(database, `cases/${id}`));
   };
 
@@ -147,11 +150,11 @@ export function DataProvider({ children }) {
 
   const addPlayer = (player) => {
     const newPlayerRef = push(ref(database, 'players'));
-    const newPlayer = { ...player, id: newPlayerRef.key };
-    set(newPlayerRef, newPlayer);
+    set(newPlayerRef, player);
   };
 
   const deletePlayer = (id) => {
+    console.log('Deleting player with ID:', id);
     remove(ref(database, `players/${id}`));
   };
 
