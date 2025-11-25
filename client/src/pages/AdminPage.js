@@ -1,8 +1,6 @@
 import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
 import { DataContext } from '../context/DataContext';
-import { storage } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const Wrapper = styled.div`
   display: grid;
@@ -585,33 +583,24 @@ function AdminPage() {
     }
   };
 
-  const handleAddPlayer = async () => {
+  const handleAddPlayer = () => {
     if (!playerForm.name || !playerForm.number || !playerForm.position) {
       alert('Fyll inn navn, nummer og posisjon');
       return;
     }
 
     setUploadingPlayer(true);
-    let imageUrl = null;
+    let imageData = '🏐';
 
-    if (playerForm.image && typeof playerForm.image !== 'string') {
-      try {
-        const storageRef = ref(storage, `players/${Date.now()}_${playerForm.image.name}`);
-        await uploadBytes(storageRef, playerForm.image);
-        imageUrl = await getDownloadURL(storageRef);
-      } catch (error) {
-        console.error('Feil ved opplasting av bilde:', error);
-        alert('Feil ved opplasting av bilde');
-        setUploadingPlayer(false);
-        return;
-      }
+    if (playerForm.imagePreview) {
+      imageData = playerForm.imagePreview;
     }
 
     addPlayer({
       name: playerForm.name,
       number: playerForm.number,
       position: playerForm.position,
-      image: imageUrl || '🏐',
+      image: imageData,
     });
 
     setPlayerForm({
@@ -704,7 +693,7 @@ function AdminPage() {
           {players.map(player => (
             <PlayerCard key={player.id}>
               <div className="image">
-                {player.image && player.image.startsWith('http') ? (
+                {player.image && (player.image.startsWith('data:') || player.image.startsWith('http')) ? (
                   <img src={player.image} alt={player.name} />
                 ) : (
                   player.image
