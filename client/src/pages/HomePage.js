@@ -58,79 +58,43 @@ const Hero = styled.section`
 `;
 
 const MotmSection = styled.section`
-  padding: 4rem 2rem;
-  max-width: 1200px;
+  padding: 2rem 2rem;
+  max-width: 800px;
   margin: 0 auto 2rem;
   position: relative;
   z-index: 2;
-`;
-
-const MotmCard = styled.div`
-  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 50%, #1a1a1a 100%);
-  color: #fff;
-  border: 2px solid rgba(255, 100, 0, 0.3);
-  border-radius: 20px;
-  box-shadow: 
-    0 30px 80px rgba(0,0,0,0.8),
-    0 0 60px rgba(255, 50, 0, 0.2),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem 2rem;
+`;
+
+const MotmCard = styled.div`
+  background: transparent;
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
   position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #ff4500 0%, #ff6400 50%, #ff4500 100%);
-    box-shadow: 0 0 20px rgba(255, 50, 0, 0.5);
-  }
-
-  @media (max-width: 768px) {
-    padding: 2rem 1.5rem;
-  }
+  width: 100%;
+  text-align: center;
 `;
 
 const MotmImage = styled.div`
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(255, 50, 0, 0.1) 0%, transparent 70%);
-  border: 3px solid rgba(255, 100, 0, 0.4);
+  width: 180px;
+  height: 180px;
+  background: transparent;
+  border: none;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8rem;
   overflow: hidden;
-  margin-bottom: 2rem;
-  box-shadow: 
-    0 0 40px rgba(255, 50, 0, 0.3),
-    0 10px 30px rgba(0, 0, 0, 0.5);
+  margin-bottom: 1.5rem;
   position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #ff4500, #ff6400, #ff4500);
-    z-index: -1;
-    animation: rotate 3s linear infinite;
-  }
-
-  @keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
 
   img {
     width: 100%;
@@ -140,10 +104,9 @@ const MotmImage = styled.div`
   }
 
   @media (max-width: 768px) {
-    width: 220px;
-    height: 220px;
-    font-size: 6rem;
-    margin-bottom: 1.5rem;
+    width: 150px;
+    height: 150px;
+    margin-bottom: 1rem;
   }
 `;
 
@@ -156,12 +119,12 @@ const MotmHeader = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
 `;
 
 const MotmTitle = styled.h3`
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -169,18 +132,19 @@ const MotmTitle = styled.h3`
     0 0 20px rgba(255, 50, 0, 0.6),
     0 0 40px rgba(255, 0, 0, 0.3);
   color: #fff;
+  margin: 0;
 
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
 `;
 
 const MotmBadge = styled.span`
   background: linear-gradient(135deg, #ff4500 0%, #ff6400 100%);
   color: #fff;
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem 1.2rem;
   border-radius: 999px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -191,42 +155,42 @@ const MotmBadge = styled.span`
 
 const MotmSub = styled.p`
   color: #ff6400;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   text-shadow: 0 0 15px rgba(255, 100, 0, 0.4);
 
   @media (max-width: 768px) {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 `;
 
 const MotmStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
   width: 100%;
-  max-width: 500px;
+  margin-top: 1rem;
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
+    gap: 1.5rem;
   }
 `;
 
 const MotmStat = styled.div`
   background: linear-gradient(135deg, rgba(255, 50, 0, 0.1) 0%, rgba(255, 100, 0, 0.05) 100%);
   border: 2px solid rgba(255, 100, 0, 0.3);
-  border-radius: 15px;
-  padding: 1.5rem 1rem;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
   text-align: center;
   transition: all 0.3s ease;
   box-shadow: 0 0 20px rgba(255, 50, 0, 0.2);
+  min-width: 120px;
 
   &:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: 0 0 30px rgba(255, 50, 0, 0.4);
     border-color: rgba(255, 100, 0, 0.5);
   }
@@ -236,7 +200,8 @@ const MotmStat = styled.div`
     font-weight: 900;
     color: #fff;
     text-shadow: 0 0 15px rgba(255, 50, 0, 0.5);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
+    display: block;
   }
 
   .label {
@@ -248,7 +213,8 @@ const MotmStat = styled.div`
   }
 
   @media (max-width: 768px) {
-    padding: 1.2rem 0.8rem;
+    padding: 0.8rem 1.2rem;
+    min-width: 100px;
 
     .value {
       font-size: 2rem;
@@ -565,7 +531,7 @@ function HomePage() {
             {motm.image && (motm.image.startsWith('data:') || motm.image.startsWith('http')) ? (
               <img src={motm.image} alt={motm.player} />
             ) : (
-              '⭐'
+              <div style={{ fontSize: '4rem', opacity: 0.6 }}>🦁</div>
             )}
           </MotmImage>
           <MotmContent>
@@ -580,12 +546,8 @@ function HomePage() {
                 <div className="label">Mål</div>
               </MotmStat>
               <MotmStat>
-                <div className="value">{motm.assists}</div>
-                <div className="label">Assist</div>
-              </MotmStat>
-              <MotmStat>
-                <div className="value">{motm.accuracy}%</div>
-                <div className="label">Treffsikkerhet</div>
+                <div className="value">{motm.saves || 0}</div>
+                <div className="label">Reddninger</div>
               </MotmStat>
             </MotmStats>
           </MotmContent>
@@ -593,7 +555,7 @@ function HomePage() {
       </MotmSection>
 
       <FeaturesSection>
-        <SectionTitle>Hva Vi Tilbyr</SectionTitle>
+        <SectionTitle>Sjekk ut</SectionTitle>
         <FeaturesGrid>
           <FeatureCard>
             <div className="icon">📅</div>
