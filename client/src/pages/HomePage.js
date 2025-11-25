@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
@@ -6,27 +6,51 @@ import { DataContext } from '../context/DataContext';
 const Container = styled.div`
   width: 100%;
   min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 25%, #2d2d2d 50%, #1a1a1a 75%, #0f0f0f 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  position: relative;
+
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(255, 0, 0, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(255, 100, 0, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+  }
 `;
 
 const Hero = styled.section`
-  background: linear-gradient(180deg, #000000 0%, #111111 100%);
+  background: transparent;
   color: white;
   padding: 6rem 2rem;
   text-align: center;
   position: relative;
   overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-    pointer-events: none;
-  }
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
 
   @media (max-width: 768px) {
     padding: 4rem 1rem;
@@ -36,7 +60,9 @@ const Hero = styled.section`
 const MotmSection = styled.section`
   padding: 3rem 2rem;
   max-width: 1100px;
-  margin: -3rem auto 2rem;
+  margin: 0 auto 2rem;
+  position: relative;
+  z-index: 2;
 `;
 
 const MotmCard = styled.div`
@@ -139,9 +165,13 @@ const MotmStat = styled.div`
 const HeroContent = styled.div`
   position: relative;
   z-index: 1;
-  max-width: 900px;
+  max-width: 600px;
   margin: 0 auto;
   animation: fadeInDown 0.8s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
 
   @keyframes fadeInDown {
     from {
@@ -155,11 +185,65 @@ const HeroContent = styled.div`
   }
 `;
 
+const LogoContainer = styled.div`
+  position: relative;
+  width: 240px;
+  height: 240px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  overflow: visible;
+  box-shadow: none;
+  filter: none;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: none;
+  }
+
+  .placeholder {
+    font-size: 5rem;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    filter: none;
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    width: 180px;
+    height: 180px;
+
+    .placeholder {
+      font-size: 4rem;
+    }
+  }
+`;
+
 const Title = styled.h1`
   font-size: 4rem;
-  margin-bottom: 1rem;
+  margin: 0;
   font-weight: 900;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: 
+    0 0 20px rgba(255, 50, 0, 0.8),
+    0 0 40px rgba(255, 0, 0, 0.6),
+    2px 2px 8px rgba(0, 0, 0, 0.8);
+  color: #fff;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 
   @media (max-width: 768px) {
     font-size: 2.5rem;
@@ -167,9 +251,16 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  opacity: 0.95;
+  font-size: 1.4rem;
+  margin: 0;
+  opacity: 1;
+  color: #ff6400;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-shadow: 
+    0 0 15px rgba(255, 100, 0, 0.6),
+    0 0 30px rgba(255, 50, 0, 0.3);
 
   @media (max-width: 768px) {
     font-size: 1.1rem;
@@ -181,43 +272,56 @@ const CTAButtons = styled.div`
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 1rem;
 `;
 
 const CTAButton = styled(Link)`
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 1rem 2.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  box-shadow: 
+    0 0 30px rgba(255, 50, 0, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.4);
 
   &.primary {
-    background: white;
-    color: #000;
+    background: linear-gradient(135deg, #ff4500 0%, #ff6400 100%);
+    color: #fff;
+    border: 2px solid #ff2500;
 
     &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 
+        0 0 50px rgba(255, 50, 0, 0.7),
+        0 12px 30px rgba(0, 0, 0, 0.5);
+      filter: brightness(1.2);
     }
   }
 
   &.secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
-    border: 2px solid white;
+    background: transparent;
+    color: #ff6400;
+    border: 2px solid #ff6400;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.16);
-      transform: translateY(-3px);
+      background: rgba(255, 100, 0, 0.15);
+      transform: translateY(-4px);
+      box-shadow: 
+        0 0 50px rgba(255, 50, 0, 0.6),
+        0 12px 30px rgba(0, 0, 0, 0.5);
     }
   }
 
   @media (max-width: 768px) {
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.9rem 2rem;
+    font-size: 0.95rem;
   }
 `;
 
@@ -337,16 +441,25 @@ const StatCard = styled.div`
 
 function HomePage() {
   const { motm } = useContext(DataContext);
+  const logo = '/images/standard_832px-Asker_SK_logo.svg.png';
+
 
   return (
     <Container>
       <Hero>
         <HeroContent>
-          <Title>🏐 Asker/Gui Herrer Håndball</Title>
-          <Subtitle>Gutta ifra Asker</Subtitle>
+          <LogoContainer>
+            {logo ? (
+              <img src={logo} alt="Team Logo" />
+            ) : (
+              <div className="placeholder">🏐</div>
+            )}
+          </LogoContainer>
+          <Title>Asker</Title>
+          <Subtitle>Blø for drakta</Subtitle>
           <CTAButtons>
             <CTAButton to="/matches" className="primary">
-              Se Kommende Kamper
+              Kommende Kamper
             </CTAButton>
           </CTAButtons>
         </HeroContent>
