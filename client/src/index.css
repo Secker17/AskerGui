@@ -1,3 +1,13 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,9 +15,26 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: 
+    radial-gradient(circle at 15% 25%, rgba(255,255,255,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(255,255,255,0.03) 0%, transparent 50%),
+    linear-gradient(180deg, #000000 0%, #0a0a0a 40%, #000000 100%);
+  color: #eaeaea;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
 }
