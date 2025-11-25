@@ -10,6 +10,7 @@ const defaultMotm = {
   goals: 11,
   assists: 3,
   accuracy: 92,
+  image: '⭐',
 };
 
 const defaultMatches = [

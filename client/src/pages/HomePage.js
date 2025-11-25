@@ -64,6 +64,13 @@ const MotmImage = styled.div`
   justify-content: center;
   font-size: 5rem;
   min-height: 220px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
 const MotmContent = styled.div`
@@ -347,7 +354,13 @@ function HomePage() {
 
       <MotmSection>
         <MotmCard>
-          <MotmImage>⭐</MotmImage>
+          <MotmImage>
+            {motm.image && (motm.image.startsWith('data:') || motm.image.startsWith('http')) ? (
+              <img src={motm.image} alt={motm.player} />
+            ) : (
+              '⭐'
+            )}
+          </MotmImage>
           <MotmContent>
             <MotmHeader>
               <MotmTitle>Man of the Match</MotmTitle>

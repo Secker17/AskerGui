@@ -505,6 +505,7 @@ function AdminPage() {
     imagePreview: null,
   });
   const [uploadingPlayer, setUploadingPlayer] = useState(false);
+  const [motmImagePreview, setMotmImagePreview] = useState(motm.image);
 
   const closeSidebar = () => setSidebarOpen(false);
   const selectTab = (tab) => {
@@ -515,6 +516,18 @@ function AdminPage() {
   const handleMotmChange = (e) => {
     const { name, value } = e.target;
     setMotmForm({ ...motmForm, [name]: isNaN(value) ? value : Number(value) });
+  };
+
+  const handleMotmImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMotmImagePreview(reader.result);
+        setMotmForm({ ...motmForm, image: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleMotmSave = () => {
@@ -807,6 +820,23 @@ function AdminPage() {
               min="0"
               max="100"
             />
+          </FormGroup>
+          <FormGroup>
+            <Label>Bilde</Label>
+            <ImageUploadLabel htmlFor="motm-image">
+              📸 Klikk for å velge bilde
+            </ImageUploadLabel>
+            <ImageInput
+              id="motm-image"
+              type="file"
+              accept="image/*"
+              onChange={handleMotmImageChange}
+            />
+            {motmImagePreview && (motmImagePreview.startsWith('data:') || motmImagePreview.startsWith('http')) && (
+              <ImagePreview>
+                <img src={motmImagePreview} alt="MOTM Preview" />
+              </ImagePreview>
+            )}
           </FormGroup>
           <Button onClick={handleMotmSave}>Lagre MOTM</Button>
         </Section>
