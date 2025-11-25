@@ -1,88 +1,70 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import styled from 'styled-components';
 import { DataContext } from '../context/DataContext';
 
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: 2rem 1rem;
   min-height: 80vh;
+
+  @media (min-width: 768px) {
+    padding: 3rem 2rem;
+  }
 `;
 
 const PageTitle = styled.h1`
-  font-size: 3rem;
+  font-size: 2rem;
   text-align: center;
-  color: #f1f1f1;
-  margin-bottom: 3rem;
-  position: relative;
-
-  &::after {
-    content: '';
-    display: block;
-    width: 100px;
-    height: 4px;
-    background: linear-gradient(90deg, #ffffff, #aaaaaa);
-    margin: 1rem auto 0;
-    border-radius: 2px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 2rem;
-  }
-`;
-
-const FilterButtons = styled.div`
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-`;
-
-const FilterButton = styled.button`
-  padding: 0.8rem 1.5rem;
-  border: 2px solid #eaeaea;
-  background: ${props => props.active ? '#111' : '#000'};
   color: #fff;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -1px;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  @media (min-width: 768px) {
+    font-size: 3rem;
+    margin-bottom: 1rem;
   }
+`;
 
-  @media (max-width: 768px) {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+const PageSubtitle = styled.p`
+  text-align: center;
+  color: #bdbdbd;
+  font-size: 0.95rem;
+  margin-bottom: 2.5rem;
+
+  @media (min-width: 768px) {
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
   }
 `;
 
 const MatchesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 `;
 
 const MatchCard = styled.div`
-  background: #0f0f0f;
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   animation: slideUp 0.5s ease-out;
-  border-left: 5px solid ${props => {
-    if (props.status === 'upcoming') return '#eaeaea';
-    if (props.status === 'live') return '#ffffff';
-    return '#bdbdbd';
-  }};
+  backdrop-filter: blur(10px);
 
   @keyframes slideUp {
     from {
@@ -96,8 +78,9 @@ const MatchCard = styled.div`
   }
 
   &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.2);
+    transform: translateY(-6px);
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 12px 40px rgba(255,255,255,0.1);
   }
 
   @media (max-width: 768px) {
@@ -127,16 +110,6 @@ const MatchDate = styled.div`
 const MatchTime = styled.div`
   font-size: 1.3rem;
   font-weight: 900;
-`;
-
-const StatusBadge = styled.span`
-  background: ${props => props.status === 'live' ? '#ffffff' : 'rgba(255, 255, 255, 0.15)'};
-  color: ${props => props.status === 'live' ? '#000' : '#fff'};
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
 `;
 
 const MatchBody = styled.div`
@@ -204,71 +177,23 @@ const DetailRow = styled.div`
   }
 `;
 
-const ActionButton = styled.button`
-  width: 100%;
-  padding: 0.9rem;
-  background: #000;
-  color: white;
-  border: 2px solid #eaeaea;
-  border-radius: 10px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
 
 function UpcomingMatchesPage() {
-  const [filter, setFilter] = useState('all');
   const { matches } = useContext(DataContext);
-
-  const filteredMatches = filter === 'all' 
-    ? matches 
-    : matches.filter(m => m.competition === filter);
 
   return (
     <Container>
-      <PageTitle>Kommende Kamper 📅</PageTitle>
-
-      <FilterButtons>
-        <FilterButton 
-          active={filter === 'all'} 
-          onClick={() => setFilter('all')}
-        >
-          Alle Kamper
-        </FilterButton>
-        <FilterButton 
-          active={filter === 'NM Serien'} 
-          onClick={() => setFilter('NM Serien')}
-        >
-          NM Serien
-        </FilterButton>
-        <FilterButton 
-          active={filter === 'Cupkamp'} 
-          onClick={() => setFilter('Cupkamp')}
-        >
-          Cupkamper
-        </FilterButton>
-      </FilterButtons>
+      <PageTitle>📅 Kommende Kamper</PageTitle>
+      <PageSubtitle>Se alle kommende kamper for Asker/Gui</PageSubtitle>
 
       <MatchesGrid>
-        {filteredMatches.map(match => (
-          <MatchCard key={match.id} status={match.status}>
+        {matches.map(match => (
+          <MatchCard key={match.id}>
             <MatchHeader>
               <div>
                 <MatchDate>{match.date}</MatchDate>
                 <MatchTime>{match.time}</MatchTime>
               </div>
-              <StatusBadge status={match.status}>
-                {match.status === 'upcoming' ? 'Kommende' : 'Live'}
-              </StatusBadge>
             </MatchHeader>
 
             <MatchBody>
@@ -289,19 +214,7 @@ function UpcomingMatchesPage() {
                   <span className="label">📍 Arena:</span>
                   <span className="value">{match.location}</span>
                 </DetailRow>
-                <DetailRow>
-                  <span className="label">🎯 Turnering:</span>
-                  <span className="value">{match.competition}</span>
-                </DetailRow>
-                <DetailRow>
-                  <span className="label">🎫 Billetter:</span>
-                  <span className="value">{match.tickets}</span>
-                </DetailRow>
               </MatchDetails>
-
-              <ActionButton>
-                Kjøp Billetter
-              </ActionButton>
             </MatchBody>
           </MatchCard>
         ))}

@@ -336,7 +336,7 @@ function HomePage() {
       <Hero>
         <HeroContent>
           <Title>🏐 Asker/Gui Herrer Håndball</Title>
-          <Subtitle>Norges mest moderne og spennende håndballag</Subtitle>
+          <Subtitle>Gutta ifra Asker</Subtitle>
           <CTAButtons>
             <CTAButton to="/matches" className="primary">
               Se Kommende Kamper
