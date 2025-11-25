@@ -16,6 +16,27 @@ const Wrapper = styled.div`
   }
 `;
 
+const MobileNav = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #0a0a0a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+
+const HamburgerButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+`;
+
 const Sidebar = styled.aside`
   background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 100%);
   border-right: 1px solid rgba(255,255,255,0.08);
@@ -508,48 +529,6 @@ function AdminPage() {
   const [uploadingPlayer, setUploadingPlayer] = useState(false);
 
   // Sjekk om bruker er på PC/desktop
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-  
-  if (isMobile) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
-        color: 'white',
-        textAlign: 'center',
-        padding: '2rem',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>📱 PC Kreves</h1>
-          <p style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '2rem' }}>
-            Admin-siden er kun tilgjengelig på PC/desktop.
-          </p>
-          <p style={{ opacity: 0.6 }}>
-            Vennligst bruk en datamaskin for å administrere innhold.
-          </p>
-          <a 
-            href="/" 
-            style={{
-              display: 'inline-block',
-              marginTop: '2rem',
-              padding: '1rem 2rem',
-              background: 'rgba(255,255,255,0.1)',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.2)'
-            }}
-          >
-            Tilbake til hovedsiden
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   const closeSidebar = () => setSidebarOpen(false);
   const selectTab = (tab) => {
@@ -758,6 +737,10 @@ function AdminPage() {
 
   return (
     <Wrapper>
+      <MobileNav>
+        <Title style={{ fontSize: '1.2rem', margin: 0 }}>Admin Meny</Title>
+        <HamburgerButton onClick={() => setSidebarOpen(true)}>☰</HamburgerButton>
+      </MobileNav>
       <Sidebar open={sidebarOpen}>
         <CloseSidebar onClick={closeSidebar}>✕</CloseSidebar>
         

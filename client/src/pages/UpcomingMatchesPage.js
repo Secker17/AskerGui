@@ -26,6 +26,10 @@ const PageTitle = styled.h1`
     font-size: 3rem;
     margin-bottom: 1rem;
   }
+
+  @media (max-width: 480px) {
+    font-size: 1.8rem;
+  }
 `;
 
 const PageSubtitle = styled.p`
@@ -58,163 +62,101 @@ const MatchesGrid = styled.div`
 const MatchCard = styled.div`
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 1.5rem;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   animation: slideUp 0.5s ease-out;
   backdrop-filter: blur(10px);
 
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   &:hover {
     transform: translateY(-6px);
     border-color: rgba(255,255,255,0.15);
     box-shadow: 0 12px 40px rgba(255,255,255,0.1);
-  }
-
-  @media (max-width: 768px) {
-    border-left: 3px solid ${props => {
-      if (props.status === 'upcoming') return '#eaeaea';
-      if (props.status === 'live') return '#ffffff';
-      return '#bdbdbd';
-    }};
-  }
+{{ ... }}
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 `;
 
 const MatchHeader = styled.div`
-  background: #0a0a0a;
-  color: white;
-  padding: 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-`;
-
-const MatchDate = styled.div`
+  padding: 0.8rem 1.2rem;
+  text-align: center;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   font-size: 0.9rem;
-  opacity: 0.9;
-`;
-
-const MatchTime = styled.div`
-  font-size: 1.3rem;
-  font-weight: 900;
+  color: #fff;
+  font-weight: 700;
 `;
 
 const MatchBody = styled.div`
-  padding: 2rem;
+  padding: 1.5rem 1rem;
 `;
 
 const TeamsContainer = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
   gap: 1rem;
 `;
 
 const Team = styled.div`
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  gap: 0.5rem;
 `;
 
 const TeamName = styled.h3`
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #f1f1f1;
-  margin-bottom: 0.5rem;
+  margin: 0;
   font-weight: 800;
-`;
-
-const TeamLogo = styled.div`
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  line-height: 1.3;
 `;
 
 const VS = styled.div`
-  font-size: 0.9rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 1rem;
+`;
+
+const Location = styled.div`
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
   color: #bdbdbd;
-  font-weight: 700;
-  text-transform: uppercase;
-`;
+  font-size: 0.9rem;
+  font-weight: 600;
+`; = useContext(DataContext);
 
-const MatchDetails = styled.div`
-  background: #0b0b0b;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(255,255,255,0.06);
-`;
-
-const DetailRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  .label {
-    color: #bdbdbd;
-    font-weight: 600;
-  }
-
-  .value {
-    color: #f1f1f1;
-    font-weight: 800;
-  }
-`;
-
-
-function UpcomingMatchesPage() {
-  const { matches } = useContext(DataContext);
-
-  return (
-    <Container>
-      <PageTitle>📅 Kommende Kamper</PageTitle>
-      <PageSubtitle>Se alle kommende kamper for Asker/Gui</PageSubtitle>
+  const formatDate = (dateString) => {
+    if (!dateString) return { day: '', month: '' };
+    const date = new Date(dateString);
+    const day = date.getDate();
+{{ ... }}
 
       <MatchesGrid>
         {matches.map(match => (
           <MatchCard key={match.id}>
             <MatchHeader>
-              <div>
-                <MatchDate>{match.date}</MatchDate>
-                <MatchTime>{match.time}</MatchTime>
-              </div>
+              {new Date(match.date).toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })} • {match.time}
             </MatchHeader>
-
             <MatchBody>
               <TeamsContainer>
                 <Team>
-                  <TeamName>Asker/Gui</TeamName>
                   <TeamLogo>🏐</TeamLogo>
+                  <TeamName>Asker/Gui</TeamName>
                 </Team>
                 <VS>VS</VS>
                 <Team>
-                  <TeamName>{match.opponent}</TeamName>
                   <TeamLogo>{match.logo}</TeamLogo>
+                  <TeamName>{match.opponent}</TeamName>
                 </Team>
               </TeamsContainer>
-
-              <MatchDetails>
-                <DetailRow>
-                  <span className="label">📍 Arena:</span>
-                  <span className="value">{match.location}</span>
-                </DetailRow>
-              </MatchDetails>
+              <Location>📍 {match.location}</Location>
             </MatchBody>
           </MatchCard>
         ))}
@@ -223,4 +165,3 @@ function UpcomingMatchesPage() {
   );
 }
 
-export default UpcomingMatchesPage;
