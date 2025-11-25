@@ -573,11 +573,11 @@ function HomePage() {
       <StatsSection>
         <StatsGrid>
           <StatCard>
-            <div className="number">25+</div>
+            <div className="number">15+</div>
             <div className="label">Spillere</div>
           </StatCard>
           <StatCard>
-            <div className="number">15</div>
+            <div className="number">8</div>
             <div className="label">Kamper Sesongen</div>
           </StatCard>
           <StatCard>
