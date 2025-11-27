@@ -531,7 +531,6 @@ function AdminPage() {
   const [uploadingPlayer, setUploadingPlayer] = useState(false);
   
   // Sjekk om bruker er på PC/desktop
-<<<<<<< HEAD
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
   
   // Sjekk PIN-kode autentisering
@@ -549,31 +548,23 @@ function AdminPage() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
-        color: 'white',
+        background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
+        color: '#fff',
         textAlign: 'center',
-        padding: '2rem',
-        fontFamily: 'Arial, sans-serif'
+        padding: '2rem'
       }}>
         <div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>📱 PC Kreves</h1>
-          <p style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '2rem' }}>
-            Admin-siden er kun tilgjengelig på PC/desktop.
-          </p>
-          <p style={{ opacity: 0.6 }}>
-            Vennligst bruk en datamaskin for å administrere innhold.
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Admin Panel</h2>
+          <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>
+            Denne siden er kun tilgjengelig på PC/desktop.
           </p>
           <a 
             href="/" 
             style={{
-              display: 'inline-block',
-              marginTop: '2rem',
-              padding: '1rem 2rem',
-              background: 'rgba(255,255,255,0.1)',
-              color: 'white',
+              color: '#ff6400',
               textDecoration: 'none',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.2)'
+              fontWeight: 'bold',
+              fontSize: '1rem'
             }}
           >
             Tilbake til hovedsiden
@@ -582,8 +573,6 @@ function AdminPage() {
       </div>
     );
   }
-=======
->>>>>>> ef218cddceb399a44eca7e6cfb0659270e15e4b2
 
   const closeSidebar = () => setSidebarOpen(false);
   const selectTab = (tab) => {
