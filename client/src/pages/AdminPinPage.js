@@ -197,7 +197,7 @@ function AdminPinPage() {
   const navigate = useNavigate();
 
   // Hent PIN fra .env eller bruk fallback
-  const CORRECT_PIN = process.env.REACT_APP_ADMIN_PIN || '123456';
+  const CORRECT_PIN = process.env.REACT_APP_ADMIN_PIN || '188181';
 
   // Flyttet logikken inn i funksjonen for å kunne bruke den i useEffect
   const checkPin = useCallback((currentPin) => {
