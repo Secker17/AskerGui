@@ -1,764 +1,624 @@
 import React, { useContext, useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
+
+// --- Animations ---
+const pulse = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(255, 69, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0); }
+`;
+
+const slideInLeft = keyframes`
+  from { opacity: 0; transform: translateX(-100px) skew(-10deg); }
+  to { opacity: 1; transform: translateX(0) skew(-10deg); }
+`;
+
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
+
+// --- Styled Components ---
 
 const Container = styled.div`
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 25%, #2d2d2d 50%, #1a1a1a 75%, #0f0f0f 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  background-color: #050505;
+  color: white;
   position: relative;
+  overflow-x: hidden;
 
-  @keyframes gradientShift {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
-  &::before {
+  /* Aggressive Background Grid */
+  background-image: 
+    linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  
+  /* Vignette effect */
+  &::after {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 50%, rgba(255, 0, 0, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, rgba(255, 100, 0, 0.06) 0%, transparent 50%);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 0%, #000000 90%);
     pointer-events: none;
     z-index: 1;
   }
 `;
 
 const Hero = styled.section`
-  background: transparent;
-  color: white;
-  padding: 6rem 2rem;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
+  padding: 8rem 5%; 
+  min-height: 90vh;
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 2;
-
-  @media (max-width: 768px) {
-    padding: 4rem 1rem;
-  }
-`;
-
-const MotmSection = styled.section`
-  padding: 2rem 2rem;
-  max-width: 800px;
-  margin: 0 auto 2rem;
+  justify-content: flex-start; /* Venstrejustert for action */
   position: relative;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
 
-const MotmCard = styled.div`
-  background: transparent;
-  color: #fff;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0;
-  position: relative;
-  width: 100%;
-  text-align: center;
-`;
-
-const MotmImage = styled.div`
-  width: 180px;
-  height: 180px;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  position: relative;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
+  /* Bakgrunns-element (Røyk/Glød) */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 69, 0, 0.15) 0%, transparent 70%);
+    filter: blur(60px);
+    z-index: -1;
   }
 
-  @media (max-width: 768px) {
-    width: 150px;
-    height: 150px;
-    margin-bottom: 1rem;
-  }
-`;
-
-const MotmContent = styled.div`
-  text-align: center;
-  width: 100%;
-`;
-
-const MotmHeader = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 1.2rem;
-`;
-
-const MotmTitle = styled.h3`
-  font-size: 2rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 
-    0 0 20px rgba(255, 50, 0, 0.6),
-    0 0 40px rgba(255, 0, 0, 0.3);
-  color: #fff;
-  margin: 0;
-
-  @media (max-width: 768px) {
-    font-size: 1.6rem;
-  }
-`;
-
-const MotmBadge = styled.span`
-  background: linear-gradient(135deg, #ff4500 0%, #ff6400 100%);
-  color: #fff;
-  padding: 0.4rem 1.2rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  box-shadow: 
-    0 0 20px rgba(255, 50, 0, 0.4),
-    0 4px 15px rgba(0, 0, 0, 0.3);
-`;
-
-const MotmSub = styled.p`
-  color: #ff6400;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  text-shadow: 0 0 15px rgba(255, 100, 0, 0.4);
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-`;
-
-const MotmStats = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  width: 100%;
-  margin-top: 1rem;
-
-  @media (max-width: 768px) {
-    gap: 1.5rem;
-  }
-
-  @media (max-width: 480px) {
-    flex-direction: column;
-    gap: 1rem;
-  }
-`;
-
-const MotmStat = styled.div`
-  background: linear-gradient(135deg, rgba(255, 50, 0, 0.1) 0%, rgba(255, 100, 0, 0.05) 100%);
-  border: 2px solid rgba(255, 100, 0, 0.3);
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(255, 50, 0, 0.2);
-  min-width: 120px;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0 30px rgba(255, 50, 0, 0.4);
-    border-color: rgba(255, 100, 0, 0.5);
-  }
-
-  .value {
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #fff;
-    text-shadow: 0 0 15px rgba(255, 50, 0, 0.5);
-    margin-bottom: 0.3rem;
-    display: block;
-  }
-
-  .label {
-    color: #ff6400;
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.8rem 1.2rem;
-    min-width: 100px;
-
-    .value {
-      font-size: 2rem;
-    }
+  @media (max-width: 1024px) {
+    justify-content: center;
+    padding: 6rem 2rem;
+    text-align: center;
   }
 `;
 
 const HeroContent = styled.div`
-  position: relative;
-  z-index: 1;
-  max-width: 600px;
-  margin: 0 auto;
-  animation: fadeInDown 0.8s ease-out;
+  max-width: 900px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-
-  @keyframes fadeInDown {
-    from {
-      opacity: 0;
-      transform: translateY(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  align-items: flex-start; /* Venstrejustert */
+  gap: 1rem;
+  
+  @media (max-width: 1024px) {
+    align-items: center;
   }
 `;
 
 const LogoContainer = styled.div`
-  position: relative;
-  width: 240px;
-  height: 240px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-  overflow: visible;
-  box-shadow: none;
-  filter: none;
-
-  &:hover {
-    transform: scale(1.05);
-  }
+  width: 150px;
+  height: 150px;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.3));
+  animation: ${float} 6s ease-in-out infinite;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: none;
-  }
-
-  .placeholder {
-    font-size: 5rem;
-    opacity: 0.8;
-    transition: all 0.3s ease;
-    filter: none;
-  }
-
-  input[type="file"] {
-    display: none;
   }
 
   @media (max-width: 768px) {
-    width: 180px;
-    height: 180px;
-
-    .placeholder {
-      font-size: 4rem;
-    }
+    width: 120px;
+    height: 120px;
   }
 `;
 
 const Title = styled.h1`
-  font-size: 4rem;
+  font-size: 7rem;
+  line-height: 0.9;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
   margin: 0;
-  font-weight: 900;
-  text-shadow: 
-    0 0 20px rgba(255, 50, 0, 0.8),
-    0 0 40px rgba(255, 0, 0, 0.6),
-    2px 2px 8px rgba(0, 0, 0, 0.8);
-  color: #fff;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  color: white;
+  transform: skew(-5deg); /* Fart! */
+  text-shadow: 5px 5px 0px rgba(255, 69, 0, 0.2);
+  letter-spacing: -3px;
+  
+  span {
+    color: #ff4500; /* Asker Orange */
+  }
 
+  @media (max-width: 1024px) {
+    font-size: 5rem;
+  }
   @media (max-width: 768px) {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
   }
 `;
 
-const TeamLogo = styled.div`
+const Subtitle = styled.div`
+  font-size: 1.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #ccc;
+  border-left: 5px solid #ff4500;
+  padding-left: 1.5rem;
+  margin-bottom: 2rem;
+  transform: skew(-5deg);
+
+  @media (max-width: 1024px) {
+    border-left: none;
+    border-bottom: 4px solid #ff4500;
+    padding-left: 0;
+    padding-bottom: 0.5rem;
+  }
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+  }
+`;
+
+// --- Fight Card / Match Display ---
+const FightCard = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  
-  img {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    
-    @media (max-width: 768px) {
-      width: 50px;
-      height: 50px;
-    }
-  }
-`;
-
-const TeamName = styled.span`
-  font-size: 4rem;
-  font-weight: 900;
-  text-shadow: 
-    0 0 30px rgba(255, 0, 0, 0.9),
-    0 0 60px rgba(255, 50, 0, 0.7),
-    0 0 90px rgba(255, 0, 0, 0.5),
-    3px 3px 10px rgba(0, 0, 0, 0.9);
-  color: #fff;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin: 0 1rem;
-  
-  @media (max-width: 768px) {
-    font-size: 2.5rem;
-    margin: 0 0.5rem;
-  }
-`;
-
-const VS = styled.span`
-  font-size: 3rem;
-  font-weight: 900;
-  color: #ff6400;
-  text-shadow: 
-    0 0 15px rgba(255, 100, 0, 0.8),
-    0 0 30px rgba(255, 50, 0, 0.6);
-  margin: 0 1rem;
-  letter-spacing: 2px;
-  
-  @media (max-width: 768px) {
-    font-size: 2rem;
-    margin: 0 0.5rem;
-  }
-`;
-
-const OpponentLogo = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  img {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    
-    @media (max-width: 768px) {
-      width: 50px;
-      height: 50px;
-    }
-  }
-`;
-
-const Subtitle = styled.p`
-  font-size: 1.4rem;
-  margin: 0;
-  opacity: 1;
-  color: #ff6400;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  text-shadow: 
-    0 0 15px rgba(255, 100, 0, 0.6),
-    0 0 30px rgba(255, 50, 0, 0.3);
-
-  @media (max-width: 768px) {
-    font-size: 1.1rem;
-  }
-`;
-
-const CTAButtons = styled.div`
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-`;
-
-const MatchDisplay = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 2rem;
-  margin-top: 2rem;
-  
-  @media (max-width: 768px) {
-    gap: 1rem;
-    margin-top: 1.5rem;
-  }
-`;
-
-const LiveButton = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
-  color: #fff;
-  text-decoration: none;
-  border-radius: 50px;
-  font-weight: 800;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 2rem;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 0 20px rgba(255, 0, 0, 0.5),
-    0 8px 20px rgba(0, 0, 0, 0.3);
-  animation: livePulse 2s ease-in-out infinite;
-  
-  @keyframes livePulse {
-    0%, 100% {
-      transform: scale(1);
-      box-shadow: 
-        0 0 20px rgba(255, 0, 0, 0.5),
-        0 8px 20px rgba(0, 0, 0, 0.3);
-    }
-    50% {
-      transform: scale(1.05);
-      box-shadow: 
-        0 0 30px rgba(255, 0, 0, 0.8),
-        0 12px 25px rgba(0, 0, 0, 0.4);
-    }
-  }
-  
-  &:hover {
-    transform: translateY(-2px) scale(1.1);
-    box-shadow: 
-      0 0 40px rgba(255, 0, 0, 0.9),
-      0 15px 30px rgba(0, 0, 0, 0.5);
-    filter: brightness(1.2);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
-    margin-top: 1.5rem;
-  }
-`;
-
-const CTAButton = styled(Link)`
-  padding: 1rem 2.5rem;
-  font-size: 1.05rem;
-  font-weight: 800;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  display: inline-block;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  box-shadow: 
-    0 0 30px rgba(255, 50, 0, 0.4),
-    0 8px 20px rgba(0, 0, 0, 0.4);
-
-  &.primary {
-    background: linear-gradient(135deg, #ff4500 0%, #ff6400 100%);
-    color: #fff;
-    border: 2px solid #ff2500;
-
-    &:hover {
-      transform: translateY(-4px) scale(1.05);
-      box-shadow: 
-        0 0 50px rgba(255, 50, 0, 0.7),
-        0 12px 30px rgba(0, 0, 0, 0.5);
-      filter: brightness(1.2);
-    }
-  }
-
-  &.secondary {
-    background: transparent;
-    color: #ff6400;
-    border: 2px solid #ff6400;
-
-    &:hover {
-      background: rgba(255, 100, 0, 0.15);
-      transform: translateY(-4px);
-      box-shadow: 
-        0 0 50px rgba(255, 50, 0, 0.6),
-        0 12px 30px rgba(0, 0, 0, 0.5);
-    }
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.9rem 2rem;
-    font-size: 0.95rem;
-  }
-`;
-
-const FeaturesSection = styled.section`
-  padding: 4rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-
-  @media (max-width: 768px) {
-    padding: 2rem 1rem;
-  }
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 2.5rem;
-  text-align: center;
-  margin-bottom: 3rem;
-  color: #eaeaea;
+  background: linear-gradient(135deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.95) 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 1.5rem 3rem;
+  transform: skew(-10deg); /* Action Shape */
+  border-left: 6px solid #ff4500;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  margin: 2rem 0;
   position: relative;
 
-  &::after {
-    content: '';
-    display: block;
-    width: 100px;
-    height: 4px;
-    background: linear-gradient(90deg, #ffffff, #aaaaaa);
-    margin: 1rem auto 0;
-    border-radius: 2px;
+  /* Innholdet må skews tilbake for å være leselig */
+  > * {
+    transform: skew(10deg);
   }
 
   @media (max-width: 768px) {
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
+    flex-direction: row; /* Keep row even on mobile if possible */
+    padding: 1rem;
+    gap: 0.5rem;
+    transform: skew(0); /* Fjern skew på veldig liten skjerm */
+    > * { transform: skew(0); }
+    border-left: none;
+    border-top: 4px solid #ff4500;
+    width: 100%;
+    justify-content: space-around;
   }
+`;
+
+const TeamBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+  }
+  
+  span {
+    font-weight: 800;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 768px) {
+    img { width: 60px; height: 60px; }
+    span { font-size: 0.9rem; }
+  }
+`;
+
+const VS = styled.div`
+  font-size: 4rem;
+  font-weight: 900;
+  font-style: italic;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255,255,255,0.2);
+  position: relative;
+  z-index: 0;
+  
+  &::after {
+    content: 'VS';
+    position: absolute;
+    top: 0; left: 0;
+    color: #ff4500;
+    opacity: 0.8;
+    transform: translate(4px, 4px);
+    z-index: -1;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    width: 100%;
+  }
+`;
+
+const ButtonStyles = css`
+  padding: 1.2rem 3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transform: skew(-10deg);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+
+  /* Shine effect */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: 0.5s;
+  }
+
+  &:hover::before {
+    left: 100%;
+  }
+
+  &:hover {
+    transform: skew(-10deg) translateY(-5px);
+    box-shadow: 0 10px 20px rgba(255, 69, 0, 0.3);
+  }
+
+  /* Fix text inside skew */
+  span {
+    transform: skew(10deg);
+  }
+`;
+
+const PrimaryBtn = styled(Link)`
+  ${ButtonStyles}
+  background: #ff4500;
+  color: white;
+  border: none;
+  
+  &:hover {
+    background: #ff5714;
+  }
+`;
+
+const LiveBtn = styled.a`
+  ${ButtonStyles}
+  background: transparent;
+  color: #ff4500;
+  border: 2px solid #ff4500;
+  animation: ${pulse} 2s infinite;
+
+  &:hover {
+    background: rgba(255, 69, 0, 0.1);
+    color: white;
+  }
+`;
+
+// --- Man of the Match (Card Style) ---
+const MotmSection = styled.section`
+  padding: 4rem 2rem;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, transparent 0%, rgba(20,20,20,0.8) 100%);
+`;
+
+const SectionHeader = styled.h2`
+  text-align: center;
+  font-size: 3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-style: italic;
+  margin-bottom: 3rem;
+  color: white;
+  
+  span { color: #ff4500; }
+`;
+
+const PlayerCard = styled.div`
+  max-width: 400px;
+  margin: 0 auto;
+  background: #111;
+  border: 1px solid #333;
+  position: relative;
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-10px);
+    border-color: #ff4500;
+    box-shadow: 0 0 30px rgba(255, 69, 0, 0.2);
+  }
+`;
+
+const CardImage = styled.div`
+  height: 400px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(20%) contrast(1.2);
+    transition: 0.5s ease;
+  }
+
+  /* Team overlay on image */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 50%;
+    background: linear-gradient(to top, #111 0%, transparent 100%);
+  }
+
+  ${PlayerCard}:hover img {
+    filter: grayscale(0%) contrast(1.1) scale(1.05);
+  }
+`;
+
+const CardContent = styled.div`
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+`;
+
+const CardBadge = styled.div`
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4500;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+`;
+
+const PlayerName = styled.h3`
+  font-size: 2rem;
+  margin: 1rem 0 0.2rem 0;
+  text-transform: uppercase;
+  font-weight: 900;
+  font-style: italic;
+`;
+
+const PlayerMeta = styled.p`
+  color: #888;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+`;
+
+const StatRow = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  border-top: 1px solid #222;
+  padding-top: 1rem;
+`;
+
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  .val { font-size: 2rem; font-weight: 800; color: #ff4500; line-height: 1; }
+  .lbl { font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: 700; margin-top: 5px; }
+`;
+
+// --- Features Grid (Industrial Style) ---
+const FeaturesSection = styled.section`
+  padding: 4rem 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
 `;
 
 const FeaturesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
-  margin-bottom: 4rem;
 `;
 
-const FeatureCard = styled.div`
-  background: #0f0f0f;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
+const FeatureBox = styled.div`
+  background: #0a0a0a;
+  padding: 2.5rem;
+  border: 1px solid #222;
+  position: relative;
+  transition: 0.3s;
+  
+  /* Corner accents */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 0; height: 2px;
+    background: #ff4500;
+    transition: 0.4s;
+  }
 
+  &:hover::before { width: 100%; }
+  
   &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    background: #111;
+    transform: translateY(-5px);
   }
 
   h3 {
     font-size: 1.5rem;
+    text-transform: uppercase;
+    font-weight: 800;
     margin-bottom: 1rem;
-    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  p {
-    color: #bdbdbd;
-    line-height: 1.6;
-  }
-
-  .icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
+  p { color: #888; line-height: 1.6; }
 `;
 
-const StatsSection = styled.section`
-  background: #0d0d0d;
-  color: white;
-  padding: 4rem 2rem;
-  margin: 4rem 0;
+const StatsBar = styled.div`
+  background: #ff4500;
+  color: black;
+  padding: 3rem 1rem;
+  margin-top: 4rem;
+  transform: skewY(-2deg); /* Hele seksjonen er skråstilt */
 `;
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
+const StatsContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  text-align: center;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 2rem;
+  transform: skewY(2deg); /* Teksten rettes opp igjen */
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
+  div {
+    text-align: center;
   }
-`;
-
-const StatCard = styled.div`
-  animation: slideUp 0.6s ease-out;
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .number {
-    font-size: 3rem;
-    font-weight: 900;
-    margin-bottom: 0.5rem;
-  }
-
-  .label {
-    font-size: 1.1rem;
-    opacity: 0.9;
-  }
+  
+  .num { font-size: 3.5rem; font-weight: 900; display: block; }
+  .lbl { font-weight: 700; text-transform: uppercase; font-size: 1.1rem; }
 `;
 
 function HomePage() {
   const { motm, matchData } = useContext(DataContext);
-  const [logo, setLogo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
+  const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   
-  // Debug logging
-  console.log('matchData:', matchData);
-  
-  // Always use currentMatch with fallback
+  // Data fallback
   const currentMatch = {
     homeTeam: 'Asker',
     awayTeam: 'HSIL', 
     homeLogo: '/images/standard_832px-Asker_SK_logo.svg.png',
     awayLogo: '/images/HSIL logo desktop.png',
-    liveLink: 'https://example.com/live', // Test med midlertidig link
-    ...matchData // Override with Firebase data if available
+    liveLink: 'https://example.com/live',
+    ...matchData 
   };
   
-  console.log('currentMatch:', currentMatch);
-  console.log('currentMatch.liveLink:', currentMatch.liveLink);
-
   return (
     <Container>
       <Hero>
         <HeroContent>
+          {/* Logo animasjon */}
           <LogoContainer>
-            {logo ? (
-              <img src={logo} alt="Team Logo" />
-            ) : (
-              <div className="placeholder">🦁</div>
-            )}
+            {logo ? <img src={logo} alt="Asker Logo" /> : <div className="placeholder">🦁</div>}
           </LogoContainer>
-          <Title>Asker</Title>
-          <Subtitle>Blø for drakta</Subtitle>
-          <CTAButtons>
-            <CTAButton to="/matches" className="primary">
-              Kommende Kamper
-            </CTAButton>
-          </CTAButtons>
-          <MatchDisplay>
-            <TeamLogo>
-              <img src={currentMatch.homeLogo} alt={currentMatch.homeTeam} />
-            </TeamLogo>
+          
+          <Title>
+            ASKER <span>/ GUI</span>
+          </Title>
+          <Subtitle>
+            NO GUTS • NO GLORY • BLØ FOR DRAKTA
+          </Subtitle>
+          
+          <FightCard>
+            <TeamBlock>
+              <img src={currentMatch.homeLogo} alt="Home" />
+              <span>{currentMatch.homeTeam}</span>
+            </TeamBlock>
+            
             <VS>VS</VS>
-            <OpponentLogo>
-              <img src={currentMatch.awayLogo} alt={currentMatch.awayTeam} />
-            </OpponentLogo>
-          </MatchDisplay>
-          <LiveButton href={currentMatch.liveLink || 'https://example.com/live'} target="_blank" rel="noopener noreferrer">
-            🔴 Se Live
-          </LiveButton>
+            
+            <TeamBlock>
+              <img src={currentMatch.awayLogo} alt="Away" />
+              <span>{currentMatch.awayTeam}</span>
+            </TeamBlock>
+          </FightCard>
+
+          <ActionButtons>
+            <PrimaryBtn to="/matches">
+              <span>Se Terminliste</span>
+            </PrimaryBtn>
+            <LiveBtn href={currentMatch.liveLink} target="_blank">
+              <span>🔴 Se Kampen Live</span>
+            </LiveBtn>
+          </ActionButtons>
+
         </HeroContent>
       </Hero>
 
       <MotmSection>
-        <MotmCard>
-          <MotmImage>
+        <SectionHeader>Kampens <span>Gigant</span></SectionHeader>
+        <PlayerCard>
+          <CardImage>
+            {/* Fallback image logic */}
             {motm.image && (motm.image.startsWith('data:') || motm.image.startsWith('http')) ? (
               <img src={motm.image} alt={motm.player} />
             ) : (
-              <div style={{ fontSize: '4rem', opacity: 0.6 }}>🦁</div>
+              <div style={{height: '100%', display: 'flex', alignItems:'center', justifyContent:'center', fontSize: '4rem', background: '#222'}}>🦁</div>
             )}
-          </MotmImage>
-          <MotmContent>
-            <MotmHeader>
-              <MotmTitle>Man of the Match</MotmTitle>
-              <MotmBadge>{motm.round}</MotmBadge>
-            </MotmHeader>
-            <MotmSub>{motm.player} • {motm.position} • #{motm.number}</MotmSub>
-            <MotmStats>
-              <MotmStat>
-                <div className="value">{motm.goals}</div>
-                <div className="label">Mål</div>
-              </MotmStat>
-              <MotmStat>
-                <div className="value">{motm.saves || 0}</div>
-                <div className="label">Reddninger</div>
-              </MotmStat>
-            </MotmStats>
-          </MotmContent>
-        </MotmCard>
+          </CardImage>
+          
+          <CardContent>
+            <CardBadge>Runde {motm.round}</CardBadge>
+            <PlayerName>{motm.player}</PlayerName>
+            <PlayerMeta>#{motm.number} • {motm.position}</PlayerMeta>
+            
+            <StatRow>
+              <StatItem>
+                <span className="val">{motm.goals}</span>
+                <span className="lbl">Kasser</span>
+              </StatItem>
+              <StatItem>
+                <span className="val">{motm.saves || 0}</span>
+                <span className="lbl">Reddninger</span>
+              </StatItem>
+            </StatRow>
+          </CardContent>
+        </PlayerCard>
       </MotmSection>
 
+      <StatsBar>
+        <StatsContent>
+          <div>
+            <span className="num">100%</span>
+            <span className="lbl">Fight</span>
+          </div>
+          <div>
+            <span className="num">#1</span>
+            <span className="lbl">Samhold</span>
+          </div>
+          <div>
+            <span className="num">2025</span>
+            <span className="lbl">Sesong</span>
+          </div>
+        </StatsContent>
+      </StatsBar>
+
       <FeaturesSection>
-        <SectionTitle>Sjekk ut</SectionTitle>
         <FeaturesGrid>
-          <FeatureCard>
-            <div className="icon">📅</div>
-            <h3>Kommende Kamper</h3>
-            <p>Hold deg oppdatert med alle kommende kamper, tider, og arenaer for hele sesongen.</p>
-          </FeatureCard>
-          <FeatureCard>
-            <div className="icon">⚖️</div>
-            <h3>Kommende Rettsaker</h3>
-            <p>Utforsk (fiktive) saker med høyeste bøter og hvilke som kan gå til rettssak – kun for gøy.</p>
-          </FeatureCard>
+          <FeatureBox>
+            <h3>📅 Terminliste</h3>
+            <p>Full oversikt over når krigen fortsetter. Hold deg oppdatert på neste slag.</p>
+          </FeatureBox>
+          <FeatureBox>
+            <h3>⚖️ Botkassa</h3>
+            <p>Justisen er hard i garderoben. Se hvem som synder mest og må betale prisen.</p>
+          </FeatureBox>
+          <FeatureBox>
+            <h3>📊 Tabell</h3>
+            <p>Veien mot toppen. Følg lagets klatring i divisjonen minutt for minutt.</p>
+          </FeatureBox>
         </FeaturesGrid>
       </FeaturesSection>
-
-      <StatsSection>
-        <StatsGrid>
-          <StatCard>
-            <div className="number">15+</div>
-            <div className="label">Spillere</div>
-          </StatCard>
-          <StatCard>
-            <div className="number">8</div>
-            <div className="label">Kamper Sesongen</div>
-          </StatCard>
-          <StatCard>
-            <div className="number">95%</div>
-            <div className="label">Seier Prosent</div>
-          </StatCard>
-          <StatCard>
-            <div className="number">2025</div>
-            <div className="label">Etablert År</div>
-          </StatCard>
-        </StatsGrid>
-      </StatsSection>
     </Container>
   );
 }

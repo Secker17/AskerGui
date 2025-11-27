@@ -1,441 +1,261 @@
 import React, { useContext, useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
 
-const Wrapper = styled.div`
+// --- Styled Components ---
+
+const AdminWrapper = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 280px 1fr;
   min-height: 100vh;
+  background-color: #050505;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  @media (min-width: 768px) {
-    grid-template-columns: 250px 1fr;
-  }
+  /* Samme grid-bakgrunn som hovedsiden */
+  background-image: 
+    linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
 
-  @media (min-width: 1024px) {
-    grid-template-columns: 280px 1fr;
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
   }
 `;
 
-const MobileNav = styled.div`
-  display: flex;
+const MobileHeader = styled.div`
+  display: none;
+  padding: 1rem 2rem;
+  background: #0a0a0a;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background: #0a0a0a;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 
-  @media (min-width: 768px) {
-    display: none;
+  @media (max-width: 1024px) {
+    display: flex;
   }
-`;
-
-const HamburgerButton = styled.button`
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
 `;
 
 const Sidebar = styled.aside`
-  background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 100%);
+  background: #080808;
   border-right: 1px solid rgba(255,255,255,0.08);
-  padding: 1.5rem 1rem;
-  display: ${props => (props.open ? 'flex' : 'none')};
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  @media (max-width: 1024px) {
+    position: fixed;
+    left: ${props => props.open ? '0' : '-100%'};
+    width: 280px;
+    transition: left 0.3s ease;
+  }
+`;
+
+const Brand = styled.h1`
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-style: italic;
+  margin-bottom: 3rem;
+  color: #fff;
+  
+  span { color: #ff4500; }
+`;
+
+const MenuGroup = styled.div`
+  display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  z-index: 999;
-  overflow-y: auto;
-
-  @media (min-width: 768px) {
-    display: flex;
-    position: static;
-    width: auto;
-    height: auto;
-    z-index: auto;
-    padding: 2rem 1.5rem;
-    gap: 1rem;
-  }
+  margin-bottom: 2rem;
 `;
 
-const SidebarTitle = styled.h3`
-  color: #fff;
-  font-size: 0.9rem;
+const MenuLabel = styled.h3`
+  font-size: 0.75rem;
   text-transform: uppercase;
+  color: #666;
   letter-spacing: 1px;
-  margin-bottom: 1rem;
-  font-weight: 900;
-  margin-top: 1rem;
-
-  @media (min-width: 768px) {
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-  }
-
-  &:first-child {
-    margin-top: 0;
-  }
+  margin-bottom: 0.8rem;
+  padding-left: 0.8rem;
 `;
 
-const SidebarButton = styled.button`
-  background: ${props => (props.active ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)')};
-  color: #fff;
-  border: 1px solid ${props => (props.active ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)')};
+const MenuItem = styled.button`
+  background: ${props => props.active ? 'rgba(255, 69, 0, 0.1)' : 'transparent'};
+  color: ${props => props.active ? '#ff4500' : '#888'};
+  border: none;
+  border-left: 3px solid ${props => props.active ? '#ff4500' : 'transparent'};
   padding: 0.8rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 0 8px 8px 0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
   &:hover {
-    background: rgba(255,255,255,0.12);
-    border-color: rgba(255,255,255,0.15);
-  }
-
-  @media (min-width: 768px) {
-    padding: 0.7rem 1rem;
-    font-size: 0.85rem;
+    background: rgba(255,255,255,0.03);
+    color: #fff;
   }
 `;
 
-const CloseSidebar = styled.button`
-  display: block;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  margin-bottom: 1rem;
+const MainContent = styled.main`
+  padding: 3rem;
+  overflow-y: auto;
+  max-width: 1400px;
+  width: 100%;
 
-  @media (min-width: 768px) {
-    display: none;
+  @media (max-width: 768px) {
+    padding: 1.5rem;
   }
 `;
 
-const Container = styled.div`
-  padding: 2rem 1rem;
-  min-height: 100vh;
-
-  @media (min-width: 768px) {
-    padding: 2rem;
-  }
-
-  @media (min-width: 1024px) {
-    padding: 3rem;
-  }
-`;
-
-const Title = styled.h1`
-  font-size: 2rem;
-  color: #fff;
-  margin-bottom: 0.5rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -1px;
-
-  @media (min-width: 768px) {
+const Header = styled.header`
+  margin-bottom: 3rem;
+  h2 {
     font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    text-transform: uppercase;
+  }
+  p {
+    color: #888;
+    margin-top: 0.5rem;
   }
 `;
 
-const Subtitle = styled.p`
-  color: #bdbdbd;
-  font-size: 0.9rem;
+// --- Forms & Cards ---
+
+const Card = styled.div`
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 2rem;
   margin-bottom: 2rem;
+  position: relative;
 
-  @media (min-width: 768px) {
-    font-size: 1rem;
-    margin-bottom: 2.5rem;
+  /* Orange accent top */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #ff4500, transparent);
+    opacity: 0.5;
   }
 `;
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-    gap: 2rem;
-  }
-`;
-
-const Section = styled.div`
-  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 1.5rem;
-  backdrop-filter: blur(10px);
-
-  @media (min-width: 768px) {
-    padding: 2rem;
-  }
-`;
-
-const SectionTitle = styled.h2`
+const CardTitle = styled.h3`
   font-size: 1.2rem;
-  color: #fff;
-  margin-bottom: 1.2rem;
-  font-weight: 900;
-
-  @media (min-width: 768px) {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #ddd;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1rem;
-
-  @media (min-width: 768px) {
-    margin-bottom: 1.2rem;
-  }
+  margin-bottom: 1.5rem;
 `;
 
 const Label = styled.label`
   display: block;
-  color: #bdbdbd;
-  font-weight: 600;
-  margin-bottom: 0.4rem;
   font-size: 0.8rem;
+  color: #888;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-
-  @media (min-width: 768px) {
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-  }
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.7rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #fff;
+  background: #161616;
+  border: 1px solid #333;
+  padding: 1rem;
+  color: white;
+  border-radius: 6px;
   font-size: 1rem;
   transition: all 0.3s ease;
 
-  @media (min-width: 768px) {
-    padding: 0.8rem;
-  }
-
   &:focus {
     outline: none;
-    border-color: rgba(255,255,255,0.3);
-    background: rgba(255,255,255,0.08);
-    box-shadow: 0 0 10px rgba(255,255,255,0.1);
-  }
-
-  &::placeholder {
-    color: rgba(255,255,255,0.4);
-  }
-`;
-
-const ImageInput = styled.input`
-  display: none;
-`;
-
-const ImageUploadLabel = styled.label`
-  display: block;
-  width: 100%;
-  padding: 1rem;
-  background: rgba(255,255,255,0.05);
-  border: 2px dashed rgba(255,255,255,0.2);
-  border-radius: 8px;
-  color: #bdbdbd;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-
-  &:hover {
-    border-color: rgba(255,255,255,0.4);
-    background: rgba(255,255,255,0.08);
-  }
-`;
-
-const ImagePreview = styled.div`
-  width: 100%;
-  height: 150px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  margin-top: 0.5rem;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    border-color: #ff4500;
+    box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.2);
   }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.7rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #fff;
+  background: #161616;
+  border: 1px solid #333;
+  padding: 1rem;
+  color: white;
+  border-radius: 6px;
   font-size: 1rem;
-  transition: all 0.3s ease;
-
-  @media (min-width: 768px) {
-    padding: 0.8rem;
-  }
+  cursor: pointer;
 
   &:focus {
     outline: none;
-    border-color: rgba(255,255,255,0.3);
-    background: rgba(255,255,255,0.08);
-  }
-
-  option {
-    background: #0a0a0a;
-    color: #fff;
+    border-color: #ff4500;
   }
 `;
 
 const Button = styled.button`
-  padding: 0.8rem 1.5rem;
-  background: ${p => (p.danger ? '#ff4444' : '#fff')};
-  color: ${p => (p.danger ? '#fff' : '#000')};
+  background: ${props => props.danger ? '#b91c1c' : '#ff4500'};
+  color: white;
   border: none;
-  border-radius: 10px;
-  font-weight: 900;
-  cursor: ${p => (p.disabled ? 'not-allowed' : 'pointer')};
-  transition: all 0.3s ease;
+  padding: 1rem 2rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 0.8rem;
-  opacity: ${p => (p.disabled ? 0.6 : 1)};
-
-  @media (min-width: 768px) {
-    padding: 0.9rem 1.8rem;
-    font-size: 0.9rem;
-  }
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: ${props => props.disabled ? 0.6 : 1};
 
   &:hover:not(:disabled) {
+    filter: brightness(1.1);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
   }
 `;
 
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-top: 1rem;
-
-  @media (min-width: 768px) {
-    gap: 0.8rem;
-    margin-top: 1.5rem;
-  }
-`;
-
-const ListItem = styled.div`
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px;
-  padding: 0.8rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-
-  @media (min-width: 768px) {
-    padding: 1rem;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .info {
-    flex: 1;
-    color: #fff;
-    font-weight: 600;
-    font-size: 0.9rem;
-
-    @media (min-width: 768px) {
-      font-size: 1rem;
-    }
-  }
-
-  .actions {
-    display: flex;
-    gap: 0.5rem;
-    width: 100%;
-
-    @media (min-width: 768px) {
-      width: auto;
-    }
-  }
-`;
-
-const DeleteButton = styled(Button)`
-  padding: 0.6rem 1rem;
-  font-size: 0.75rem;
-  flex: 1;
-
-  @media (min-width: 768px) {
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
-    flex: none;
-  }
-`;
-
-const PlayerGrid = styled.div`
+const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
-  }
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
 `;
 
-const PlayerCard = styled.div`
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
+const ItemCard = styled.div`
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
   overflow: hidden;
-  text-align: center;
-  transition: all 0.3s ease;
+  position: relative;
+  transition: transform 0.2s;
 
   &:hover {
-    border-color: rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.06);
+    transform: translateY(-4px);
+    border-color: #555;
   }
 
-  .image {
-    width: 100%;
-    height: 120px;
-    background: rgba(255,255,255,0.05);
+  .img-wrapper {
+    height: 150px;
+    background: #111;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
-    margin-bottom: 0;
     overflow: hidden;
 
     img {
@@ -443,9 +263,8 @@ const PlayerCard = styled.div`
       height: 100%;
       object-fit: cover;
     }
-
-    @media (min-width: 768px) {
-      height: 140px;
+    
+    .placeholder {
       font-size: 3rem;
     }
   }
@@ -454,781 +273,498 @@ const PlayerCard = styled.div`
     padding: 1rem;
   }
 
-  .name {
-    color: #fff;
-    font-weight: 700;
-    font-size: 0.85rem;
-    margin-bottom: 0.3rem;
+  h4 { margin: 0 0 0.5rem 0; color: white; }
+  p { margin: 0 0 1rem 0; color: #888; font-size: 0.9rem; }
 
-    @media (min-width: 768px) {
-      font-size: 0.95rem;
-    }
-  }
-
-  .number {
-    color: #bdbdbd;
-    font-size: 0.75rem;
-    margin-bottom: 0.5rem;
-
-    @media (min-width: 768px) {
-      font-size: 0.85rem;
-    }
-  }
-
-  .position {
-    color: #9f9f9f;
-    font-size: 0.7rem;
-    margin-bottom: 0.8rem;
-
-    @media (min-width: 768px) {
-      font-size: 0.8rem;
-      margin-bottom: 1rem;
-    }
-  }
-
-  .delete-btn {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 0.7rem;
-
-    @media (min-width: 768px) {
-      padding: 0.6rem;
-      font-size: 0.75rem;
-    }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
   }
 `;
 
+const SmallBtn = styled(Button)`
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  width: 100%;
+  justify-content: center;
+`;
+
+// Image Upload Styles
+const UploadBox = styled.label`
+  border: 2px dashed #444;
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  display: block;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #ff4500;
+    background: rgba(255, 69, 0, 0.05);
+  }
+
+  span {
+    display: block;
+    color: #888;
+    margin-top: 0.5rem;
+  }
+`;
+
+const PreviewBox = styled.div`
+  margin-top: 1rem;
+  width: 150px;
+  height: 150px;
+  border: 1px solid #333;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+`;
+
+const ListRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a1a1a;
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+  
+  &:last-child { border-bottom: none; }
+
+  .info { font-weight: 600; }
+  .actions { display: flex; gap: 1rem; }
+`;
+
 function AdminPage() {
-  // Alle React Hooks må kalles først
   const navigate = useNavigate();
   const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData, matchData, updateMatchData } = useContext(DataContext);
-  const [activeTab, setActiveTab] = useState('players');
+  
+  const [activeTab, setActiveTab] = useState('matchData');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Forms States
   const [motmForm, setMotmForm] = useState(motm);
   const [editingMatch, setEditingMatch] = useState(null);
   const [editingCase, setEditingCase] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Match Data Form
   const [matchForm, setMatchForm] = useState({
-    date: '',
-    time: '',
-    opponent: '',
-    location: '',
-    logo: '🦁'
+    date: '', time: '', opponent: '', location: '', logo: ''
   });
+
+  // Case Form
   const [caseForm, setCaseForm] = useState({
-    player: '',
-    reason: '',
-    fine: '',
-    likelihood: 0.5,
-    round: ''
+    player: '', reason: '', fine: '', likelihood: 0.5, round: ''
   });
+
+  // Player Form
   const [playerForm, setPlayerForm] = useState({
-    name: '',
-    number: '',
-    position: '',
-    image: '🦁'
+    name: '', number: '', position: '', imagePreview: null
   });
-  const [motmImagePreview, setMotmImagePreview] = useState(null);
-  const [uploadingPlayer, setUploadingPlayer] = useState(false);
-  
-  // Sjekk om bruker er på PC/desktop
+
+  // Mobile Check
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-  
-  // Sjekk PIN-kode autentisering
+
   useEffect(() => {
     const isAuthenticated = sessionStorage.getItem('adminAuthenticated');
-    if (!isAuthenticated) {
-      navigate('/admin-pin');
-    }
+    if (!isAuthenticated) navigate('/admin-pin');
   }, [navigate]);
-  
-  if (isMobile) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
-        color: '#fff',
-        textAlign: 'center',
-        padding: '2rem'
-      }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Admin Panel</h2>
-          <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>
-            Denne siden er kun tilgjengelig på PC/desktop.
-          </p>
-          <a 
-            href="/" 
-            style={{
-              color: '#ff6400',
-              textDecoration: 'none',
-              fontWeight: 'bold',
-              fontSize: '1rem'
-            }}
-          >
-            Tilbake til hovedsiden
-          </a>
-        </div>
-      </div>
-    );
-  }
 
-  const closeSidebar = () => setSidebarOpen(false);
-  const selectTab = (tab) => {
-    setActiveTab(tab);
-    closeSidebar();
-  };
+  // --- Handlers ---
 
-  const handleMotmChange = (e) => {
-    const { name, value } = e.target;
-    setMotmForm({ ...motmForm, [name]: isNaN(value) ? value : Number(value) });
-  };
-
-  const handleMotmImageChange = (e) => {
+  const handleFileUpload = (e, setterFunc, keyName = 'image') => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMotmImagePreview(reader.result);
-        setMotmForm({ ...motmForm, image: reader.result });
+        if (keyName === 'previewOnly') {
+            setterFunc(reader.result); // Just sets the preview string
+        } else {
+            setterFunc(prev => ({ ...prev, [keyName]: reader.result }));
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleMotmSave = async () => {
-    try {
-      await updateMotm(motmForm);
-      alert('Man of the Match oppdatert!');
-    } catch (error) {
-      alert('Feil ved oppdatering av MOTM: ' + error.message);
-    }
+  // Match Data Handlers
+  const handleUpdateMatchData = (field, value) => {
+    updateMatchData({ ...matchData, [field]: value });
   };
 
-  const handleMatchChange = (e) => {
-    const { name, value } = e.target;
-    setMatchForm({ ...matchForm, [name]: value });
-  };
-
-  const handleAddMatch = async () => {
-    if (!matchForm.date || !matchForm.opponent) {
-      alert('Fyll inn dato og motstander');
-      return;
-    }
-    
-    try {
-      if (editingMatch) {
-        // Update existing match
-        const updatedMatch = { ...matchForm, id: editingMatch.id };
-        await deleteMatch(editingMatch.id);
-        await addMatch(updatedMatch);
-        setEditingMatch(null);
-        alert('Kamp oppdatert!');
-      } else {
-        // Add new match
-        await addMatch(matchForm);
-        alert('Kamp lagt til!');
-      }
-      
-      setMatchForm({
-        date: '',
-        time: '',
-        opponent: '',
-        logo: '🦁',
-        location: '',
-      });
-    } catch (error) {
-      alert('Feil ved lagring av kamp: ' + error.message);
-    }
-  };
-
-  const handleEditMatch = (match) => {
-    setEditingMatch(match);
-    setMatchForm({
-      date: match.date,
-      time: match.time,
-      opponent: match.opponent,
-      logo: match.logo,
-      location: match.location,
-    });
-    setActiveTab('matches');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingMatch(null);
-    setMatchForm({
-      date: '',
-      time: '',
-      opponent: '',
-      logo: '🦁',
-      location: '',
-    });
-  };
-
-  const handleCaseChange = (e) => {
-    const { name, value } = e.target;
-    setCaseForm({ ...caseForm, [name]: isNaN(value) ? value : Number(value) });
-  };
-
-  const handleAddCase = async () => {
-    if (!caseForm.player || !caseForm.reason) {
-      alert('Fyll inn spiller og årsak');
-      return;
-    }
-    
-    try {
-      if (editingCase) {
-        // Update existing case
-        const updatedCase = { ...caseForm, id: editingCase.id };
-        await deleteCase(editingCase.id);
-        await addCase(updatedCase);
-        setEditingCase(null);
-        alert('Rettssak oppdatert!');
-      } else {
-        // Add new case
-        await addCase(caseForm);
-        alert('Rettssak lagt til!');
-      }
-      
-      setCaseForm({
-        player: '',
-        reason: '',
-        fine: 0,
-        likelihood: 0.5,
-        round: '',
-      });
-    } catch (error) {
-      alert('Feil ved lagring av rettssak: ' + error.message);
-    }
-  };
-
-  const handleEditCase = (caseItem) => {
-    setEditingCase(caseItem);
-    setCaseForm({
-      player: caseItem.player,
-      reason: caseItem.reason,
-      fine: caseItem.fine,
-      likelihood: caseItem.likelihood,
-      round: caseItem.round,
-    });
-    setActiveTab('cases');
-  };
-
-  const handleCancelEditCase = () => {
-    setEditingCase(null);
-    setCaseForm({
-      player: '',
-      reason: '',
-      fine: 0,
-      likelihood: 0.5,
-      round: '',
-    });
-  };
-
-  const handlePlayerChange = (e) => {
-    const { name, value } = e.target;
-    setPlayerForm({ ...playerForm, [name]: isNaN(value) ? value : Number(value) });
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPlayerForm({ ...playerForm, image: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPlayerForm(prev => ({ ...prev, imagePreview: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
+  // Player Handlers
   const handleAddPlayer = async () => {
-    if (!playerForm.name || !playerForm.number || !playerForm.position) {
-      alert('Fyll inn navn, nummer og posisjon');
-      return;
-    }
-
-    setUploadingPlayer(true);
+    if (!playerForm.name || !playerForm.number) return alert('Mangler navn eller nummer');
+    setLoading(true);
     try {
-      let imageData = '🦁';
-
-      if (playerForm.imagePreview) {
-        imageData = playerForm.imagePreview;
-      }
-
       await addPlayer({
         name: playerForm.name,
         number: playerForm.number,
         position: playerForm.position,
-        image: imageData,
+        image: playerForm.imagePreview || '🦁'
       });
-
-      setPlayerForm({
-        name: '',
-        number: '',
-        position: '',
-        image: null,
-        imagePreview: null,
-      });
-      alert('Spiller lagt til!');
-    } catch (error) {
-      alert('Feil ved lagring av spiller: ' + error.message);
-    } finally {
-      setUploadingPlayer(false);
-    }
+      setPlayerForm({ name: '', number: '', position: '', imagePreview: null });
+    } catch (e) { alert(e.message); }
+    setLoading(false);
   };
 
+  // Match List Handlers
+  const handleSaveMatch = async () => {
+    if (!matchForm.opponent) return;
+    setLoading(true);
+    try {
+      if (editingMatch) {
+        await deleteMatch(editingMatch.id);
+        await addMatch({ ...matchForm, id: editingMatch.id });
+        setEditingMatch(null);
+      } else {
+        await addMatch(matchForm);
+      }
+      setMatchForm({ date: '', time: '', opponent: '', location: '', logo: '' });
+    } catch (e) { alert(e.message); }
+    setLoading(false);
+  };
+
+  // Case Handlers
+  const handleSaveCase = async () => {
+    if (!caseForm.player) return;
+    setLoading(true);
+    try {
+      const data = { ...caseForm, fine: Number(caseForm.fine) };
+      if (editingCase) {
+        await deleteCase(editingCase.id);
+        await addCase({ ...data, id: editingCase.id });
+        setEditingCase(null);
+      } else {
+        await addCase(data);
+      }
+      setCaseForm({ player: '', reason: '', fine: '', likelihood: 0.5, round: '' });
+    } catch (e) { alert(e.message); }
+    setLoading(false);
+  };
+
+  // MOTM Handler
+  const handleSaveMotm = async () => {
+    setLoading(true);
+    try {
+      await updateMotm(motmForm);
+      alert('Lagret!');
+    } catch (e) { alert(e.message); }
+    setLoading(false);
+  };
+
+  if (isMobile) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff', flexDirection: 'column', gap: '1rem' }}>
+        <h2>💻 Gå til PC</h2>
+        <p>Admin-panelet krever større skjerm.</p>
+        <Button onClick={() => navigate('/')}>Tilbake</Button>
+      </div>
+    );
+  }
+
   return (
-    <Wrapper>
-      <MobileNav>
-        <Title style={{ fontSize: '1.2rem', margin: 0 }}>Admin Meny</Title>
-        <HamburgerButton onClick={() => setSidebarOpen(true)}>☰</HamburgerButton>
-      </MobileNav>
+    <AdminWrapper>
+      <MobileHeader>
+        <Brand style={{margin:0, fontSize:'1.2rem'}}>Admin</Brand>
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{background:'none', border:'none', color:'white', fontSize:'1.5rem'}}>☰</button>
+      </MobileHeader>
+
       <Sidebar open={sidebarOpen}>
-        <CloseSidebar onClick={closeSidebar}>✕</CloseSidebar>
+        <Brand>Asker<span>Admin</span></Brand>
         
-        <SidebarTitle>Innhold</SidebarTitle>
-        <SidebarButton active={activeTab === 'players'} onClick={() => selectTab('players')}>👥 Spillere</SidebarButton>
-        <SidebarButton active={activeTab === 'motm'} onClick={() => selectTab('motm')}>⭐ Man of the Match</SidebarButton>
-        <SidebarButton active={activeTab === 'matches'} onClick={() => selectTab('matches')}>📅 Kamper</SidebarButton>
-        <SidebarButton active={activeTab === 'matchData'} onClick={() => selectTab('matchData')}>⚔️ Dagens Kamp</SidebarButton>
-        <SidebarButton active={activeTab === 'cases'} onClick={() => selectTab('cases')}>⚖️ Rettsaker</SidebarButton>
+        <MenuGroup>
+          <MenuLabel>Dashbord</MenuLabel>
+          <MenuItem active={activeTab === 'matchData'} onClick={() => setActiveTab('matchData')}>
+            <span>⚔️</span> Dagens Kamp (Forside)
+          </MenuItem>
+          <MenuItem active={activeTab === 'motm'} onClick={() => setActiveTab('motm')}>
+             <span>⭐</span> Man of the Match
+          </MenuItem>
+        </MenuGroup>
 
-        <SidebarTitle style={{ marginTop: '2rem' }}>Lister</SidebarTitle>
-        <SidebarButton active={activeTab === 'matchList'} onClick={() => selectTab('matchList')}>📋 Alle Kamper</SidebarButton>
-        <SidebarButton active={activeTab === 'caseList'} onClick={() => selectTab('caseList')}>📋 Alle Rettsaker</SidebarButton>
+        <MenuGroup>
+          <MenuLabel>Database</MenuLabel>
+          <MenuItem active={activeTab === 'players'} onClick={() => setActiveTab('players')}>
+            <span>👥</span> Spillere
+          </MenuItem>
+          <MenuItem active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
+            <span>📅</span> Terminliste
+          </MenuItem>
+          <MenuItem active={activeTab === 'cases'} onClick={() => setActiveTab('cases')}>
+            <span>⚖️</span> Botkassa
+          </MenuItem>
+        </MenuGroup>
 
-        <SidebarTitle style={{ marginTop: '2rem' }}>Verktøy</SidebarTitle>
-        <SidebarButton danger onClick={async () => {
-          if (window.confirm('Er du sikker? Dette sletter ALLE kamper, rettsaker og spillere!')) {
-            try {
-              await clearAllData();
-              alert('All data slettet!');
-            } catch (error) {
-              alert('Feil ved sletting: ' + error.message);
-            }
-          }
-        }} style={{ background: '#ff4444', color: '#fff' }}>🗑️ Slett Alt Data</SidebarButton>
+        <div style={{ marginTop: 'auto' }}>
+          <Button danger onClick={async () => {
+             if(window.confirm('SLETT ALT? Dette kan ikke angres.')) await clearAllData();
+          }} style={{ width: '100%', fontSize: '0.8rem' }}>
+             🗑️ Reset Database
+          </Button>
+        </div>
       </Sidebar>
 
-      <Container>
-        <Title>⚙️ Admin</Title>
-        <Subtitle>Administrer innholdet på siden</Subtitle>
+      <MainContent>
+        <Header>
+          <h2>
+            {activeTab === 'matchData' && 'Dagens Kamp'}
+            {activeTab === 'motm' && 'Man of the Match'}
+            {activeTab === 'players' && 'Spillerstall'}
+            {activeTab === 'matches' && 'Terminliste'}
+            {activeTab === 'cases' && 'Botkassa'}
+          </h2>
+          <p>Endringer her oppdaterer appen umiddelbart.</p>
+        </Header>
 
-        {activeTab === 'players' && (
-        <Section style={{ marginBottom: '2rem' }}>
-        <SectionTitle>Legg til Spiller</SectionTitle>
-        <FormGroup>
-          <Label>Navn</Label>
-          <Input
-            type="text"
-            name="name"
-            value={playerForm.name}
-            onChange={handlePlayerChange}
-            placeholder="F.eks. Magnus Andersen"
-          />
-        </FormGroup>
-        <FormGroup>
-          <Label>Nummer</Label>
-          <Input
-            type="number"
-            name="number"
-            value={playerForm.number}
-            onChange={handlePlayerChange}
-            min="1"
-          />
-        </FormGroup>
-        <FormGroup>
-          <Label>Posisjon</Label>
-          <Input
-            type="text"
-            name="position"
-            value={playerForm.position}
-            onChange={handlePlayerChange}
-            placeholder="F.eks. Høyre Fløy"
-          />
-        </FormGroup>
-        <FormGroup>
-          <Label>Bilde</Label>
-          <ImageUploadLabel htmlFor="player-image">
-            📸 Klikk for å velge bilde
-          </ImageUploadLabel>
-          <ImageInput
-            id="player-image"
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-          />
-          {playerForm.imagePreview && (
-            <ImagePreview>
-              <img src={playerForm.imagePreview} alt="Preview" />
-            </ImagePreview>
-          )}
-        </FormGroup>
-        <Button onClick={handleAddPlayer} disabled={uploadingPlayer}>
-          {uploadingPlayer ? 'Laster opp...' : 'Legg til Spiller'}
-        </Button>
-
-        <SectionTitle style={{ marginTop: '2rem' }}>Spillere ({players.length})</SectionTitle>
-        <PlayerGrid>
-          {players.map(player => (
-            <PlayerCard key={player.id}>
-              <div className="image">
-                {player.image && (player.image.startsWith('data:') || player.image.startsWith('http')) ? (
-                  <img src={player.image} alt={player.name} />
-                ) : (
-                  player.image
-                )}
-              </div>
-              <div className="content">
-                <div className="name">{player.name}</div>
-                <div className="number">#{player.number}</div>
-                <div className="position">{player.position}</div>
-                <DeleteButton danger className="delete-btn" onClick={async () => {
-                  try {
-                    console.log('Deleting player:', player.id);
-                    await deletePlayer(player.id);
-                    console.log('Player deleted successfully');
-                    alert('Spiller slettet!');
-                  } catch (error) {
-                    console.error('Delete error:', error);
-                    alert('Feil ved sletting av spiller: ' + error.message);
-                  }
-                }}>Slett</DeleteButton>
-              </div>
-            </PlayerCard>
-          ))}
-        </PlayerGrid>
-      </Section>
-        )}
-
-        {activeTab === 'motm' && (
-      <Grid>
-        <Section>
-          <SectionTitle>Man of the Match</SectionTitle>
-          <FormGroup>
-            <Label>Velg Spiller</Label>
-            <Select
-              value={motmForm.player}
-              onChange={(e) => {
-                const selected = players.find(p => p.name === e.target.value);
-                if (selected) {
-                  setMotmForm({
-                    ...motmForm,
-                    player: selected.name,
-                    position: selected.position,
-                    number: selected.number,
-                  });
-                }
-              }}
-            >
-              <option value="">-- Velg spiller --</option>
-              {players.map(p => (
-                <option key={p.id} value={p.name}>{p.name} (#{p.number})</option>
-              ))}
-            </Select>
-          </FormGroup>
-          <FormGroup>
-            <Label>Spiller Navn</Label>
-            <Input
-              type="text"
-              name="player"
-              value={motmForm.player}
-              onChange={handleMotmChange}
-              placeholder="F.eks. Magnus Andersen"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Posisjon</Label>
-            <Input
-              type="text"
-              name="position"
-              value={motmForm.position}
-              onChange={handleMotmChange}
-              placeholder="F.eks. Høyre Fløy"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Nummer</Label>
-            <Input
-              type="number"
-              name="number"
-              value={motmForm.number}
-              onChange={handleMotmChange}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Mål</Label>
-            <Input
-              type="number"
-              name="goals"
-              value={motmForm.goals}
-              onChange={handleMotmChange}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Reddninger</Label>
-            <Input
-              type="number"
-              name="saves"
-              value={motmForm.saves || 0}
-              onChange={handleMotmChange}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Bilde</Label>
-            <ImageUploadLabel htmlFor="motm-image">
-              📸 Klikk for å velge bilde
-            </ImageUploadLabel>
-            <ImageInput
-              id="motm-image"
-              type="file"
-              accept="image/*"
-              onChange={handleMotmImageChange}
-            />
-            {motmImagePreview && (motmImagePreview.startsWith('data:') || motmImagePreview.startsWith('http')) && (
-              <ImagePreview>
-                <img src={motmImagePreview} alt="MOTM Preview" />
-              </ImagePreview>
-            )}
-          </FormGroup>
-          <Button onClick={handleMotmSave}>Lagre MOTM</Button>
-        </Section>
-      </Grid>
-        )}
-
-        {activeTab === 'matches' && (
-      <Grid>
-        <Section>
-          <SectionTitle>{editingMatch ? 'Rediger Kamp' : 'Legg til Kamp'}</SectionTitle>
-          <FormGroup>
-            <Label>Dato</Label>
-            <Input
-              type="date"
-              name="date"
-              value={matchForm.date}
-              onChange={handleMatchChange}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Tid</Label>
-            <Input
-              type="time"
-              name="time"
-              value={matchForm.time}
-              onChange={handleMatchChange}
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Motstander</Label>
-            <Input
-              type="text"
-              name="opponent"
-              value={matchForm.opponent}
-              onChange={handleMatchChange}
-              placeholder="F.eks. Kolbotn IL"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Logo (Emoji)</Label>
-            <Input
-              type="text"
-              name="logo"
-              value={matchForm.logo}
-              onChange={handleMatchChange}
-              maxLength="2"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Arena</Label>
-            <Input
-              type="text"
-              name="location"
-              value={matchForm.location}
-              onChange={handleMatchChange}
-              placeholder="F.eks. Asker Idrettshall"
-            />
-          </FormGroup>
-          {editingMatch && <Button secondary onClick={handleCancelEdit}>Avbryt</Button>}
-          <Button onClick={handleAddMatch}>{editingMatch ? 'Oppdater Kamp' : 'Legg til Kamp'}</Button>
-        </Section>
-      </Grid>
-        )}
-
-        {activeTab === 'matchList' && (
-        <Section>
-          <SectionTitle>Kamper ({matches.length})</SectionTitle>
-          <List>
-            {matches.map(match => (
-              <ListItem key={match.id}>
-                <div className="info">
-                  {match.date} - {match.opponent} {match.time && `(${match.time})`}
-                </div>
-                <div className="actions">
-                  <DeleteButton onClick={() => handleEditMatch(match)}>Rediger</DeleteButton>
-                  <DeleteButton danger onClick={async () => {
-                    try {
-                      await deleteMatch(match.id);
-                      alert('Kamp slettet!');
-                    } catch (error) {
-                      alert('Feil ved sletting av kamp: ' + error.message);
-                    }
-                  }}>Slett</DeleteButton>
-                </div>
-              </ListItem>
-            ))}
-          </List>
-        </Section>
-        )}
-
+        {/* --- TAB: MATCH DATA (DAGENS KAMP) --- */}
         {activeTab === 'matchData' && (
-      <Grid>
-        <Section>
-          <SectionTitle>Dagens Kamp</SectionTitle>
-          <FormGroup>
-            <Label>Hjemmelag</Label>
-            <Input
-              type="text"
-              value={matchData.homeTeam}
-              onChange={(e) => updateMatchData({ ...matchData, homeTeam: e.target.value })}
-              placeholder="Asker"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Bortelag</Label>
-            <Input
-              type="text"
-              value={matchData.awayTeam}
-              onChange={(e) => updateMatchData({ ...matchData, awayTeam: e.target.value })}
-              placeholder="Motstander"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Hjemmelag Logo</Label>
-            <Input
-              type="text"
-              value={matchData.homeLogo}
-              onChange={(e) => updateMatchData({ ...matchData, homeLogo: e.target.value })}
-              placeholder="/images/logo.png"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Bortelag Logo</Label>
-            <Input
-              type="text"
-              value={matchData.awayLogo}
-              onChange={(e) => updateMatchData({ ...matchData, awayLogo: e.target.value })}
-              placeholder="/images/opponent.png"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Live Link</Label>
-            <Input
-              type="text"
-              value={matchData.liveLink}
-              onChange={(e) => updateMatchData({ ...matchData, liveLink: e.target.value })}
-              placeholder="https://example.com/live"
-            />
-          </FormGroup>
-          <Button onClick={() => alert('Dagens kamp oppdatert!')}>
-            Lagre Dagens Kamp
-          </Button>
-        </Section>
-      </Grid>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <Card>
+              <CardTitle>Kamp Informasjon</CardTitle>
+              <FormGroup>
+                <Label>Hjemmelag</Label>
+                <Input value={matchData.homeTeam} onChange={e => handleUpdateMatchData('homeTeam', e.target.value)} />
+              </FormGroup>
+              <FormGroup>
+                <Label>Bortelag</Label>
+                <Input value={matchData.awayTeam} onChange={e => handleUpdateMatchData('awayTeam', e.target.value)} />
+              </FormGroup>
+              <FormGroup>
+                <Label>Live Stream Link</Label>
+                <Input value={matchData.liveLink} onChange={e => handleUpdateMatchData('liveLink', e.target.value)} />
+              </FormGroup>
+            </Card>
+
+            <Card>
+              <CardTitle>Logoer</CardTitle>
+              <FormGroup>
+                <Label>Hjemmelag Logo</Label>
+                <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
+                    <div style={{flex: 1}}>
+                         <Input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('homeLogo', val), 'previewOnly')} 
+                         />
+                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller lim inn URL under:</p>
+                         <Input value={matchData.homeLogo} onChange={e => handleUpdateMatchData('homeLogo', e.target.value)} placeholder="URL..." />
+                    </div>
+                    <PreviewBox>
+                        {matchData.homeLogo ? <img src={matchData.homeLogo} alt="Home" /> : <span>Ingen</span>}
+                    </PreviewBox>
+                </div>
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Bortelag Logo</Label>
+                <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
+                    <div style={{flex: 1}}>
+                         <Input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('awayLogo', val), 'previewOnly')} 
+                         />
+                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller lim inn URL under:</p>
+                         <Input value={matchData.awayLogo} onChange={e => handleUpdateMatchData('awayLogo', e.target.value)} placeholder="URL..." />
+                    </div>
+                    <PreviewBox>
+                        {matchData.awayLogo ? <img src={matchData.awayLogo} alt="Away" /> : <span>Ingen</span>}
+                    </PreviewBox>
+                </div>
+              </FormGroup>
+              <Button onClick={() => alert('Dagens kamp er oppdatert automatisk i context!')}>Bekreft Endringer</Button>
+            </Card>
+          </div>
         )}
 
+        {/* --- TAB: PLAYERS --- */}
+        {activeTab === 'players' && (
+          <>
+            <Card>
+              <CardTitle>Legg til ny kriger</CardTitle>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <FormGroup>
+                    <Label>Navn</Label>
+                    <Input value={playerForm.name} onChange={e => setPlayerForm({...playerForm, name: e.target.value})} placeholder="Navn..." />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Nummer</Label>
+                    <Input type="number" value={playerForm.number} onChange={e => setPlayerForm({...playerForm, number: e.target.value})} placeholder="#" />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Posisjon</Label>
+                    <Input value={playerForm.position} onChange={e => setPlayerForm({...playerForm, position: e.target.value})} placeholder="Posisjon..." />
+                </FormGroup>
+              </div>
+              <FormGroup>
+                 <Label>Spillerbilde</Label>
+                 <UploadBox>
+                    <input type="file" hidden onChange={(e) => handleFileUpload(e, setPlayerForm, 'imagePreview')} />
+                    📸 Last opp bilde
+                 </UploadBox>
+                 {playerForm.imagePreview && (
+                    <PreviewBox style={{marginTop: '1rem'}}>
+                        <img src={playerForm.imagePreview} alt="Preview" />
+                    </PreviewBox>
+                 )}
+              </FormGroup>
+              <Button onClick={handleAddPlayer} disabled={loading}>
+                 {loading ? 'Laster opp...' : 'Legg til Spiller'}
+              </Button>
+            </Card>
+
+            <Grid>
+              {players.map(p => (
+                <ItemCard key={p.id}>
+                  <div className="img-wrapper">
+                    {p.image && p.image.length > 10 ? <img src={p.image} alt={p.name} /> : <span className="placeholder">🦁</span>}
+                  </div>
+                  <div className="content">
+                    <h4>{p.name}</h4>
+                    <p>#{p.number} • {p.position}</p>
+                    <SmallBtn danger onClick={() => deletePlayer(p.id)}>Slett</SmallBtn>
+                  </div>
+                </ItemCard>
+              ))}
+            </Grid>
+          </>
+        )}
+
+        {/* --- TAB: MOTM --- */}
+        {activeTab === 'motm' && (
+          <Card>
+             <CardTitle>Oppdater MOTM Kortet</CardTitle>
+             <FormGroup>
+               <Label>Velg fra liste (Fyller ut automatisk)</Label>
+               <Select onChange={(e) => {
+                  const p = players.find(pl => pl.name === e.target.value);
+                  if(p) setMotmForm({...motmForm, player: p.name, number: p.number, position: p.position});
+               }}>
+                  <option>Velg spiller...</option>
+                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+               </Select>
+             </FormGroup>
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <FormGroup>
+                    <Label>Navn</Label>
+                    <Input value={motmForm.player} onChange={e => setMotmForm({...motmForm, player: e.target.value})} />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Mål</Label>
+                    <Input type="number" value={motmForm.goals} onChange={e => setMotmForm({...motmForm, goals: Number(e.target.value)})} />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Reddninger</Label>
+                    <Input type="number" value={motmForm.saves} onChange={e => setMotmForm({...motmForm, saves: Number(e.target.value)})} />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Runde</Label>
+                    <Input value={motmForm.round} onChange={e => setMotmForm({...motmForm, round: e.target.value})} />
+                </FormGroup>
+             </div>
+             <FormGroup>
+                <Label>Bilde (Override)</Label>
+                <UploadBox>
+                    <input type="file" hidden onChange={(e) => handleFileUpload(e, setMotmForm, 'image')} />
+                    📸 Last opp nytt bilde
+                </UploadBox>
+                {motmForm.image && motmForm.image.length > 20 && (
+                     <PreviewBox>
+                        <img src={motmForm.image} alt="Preview" />
+                     </PreviewBox>
+                )}
+             </FormGroup>
+             <Button onClick={handleSaveMotm}>Publiser MOTM</Button>
+          </Card>
+        )}
+
+        {/* --- TAB: MATCHES --- */}
+        {activeTab === 'matches' && (
+           <>
+             <Card>
+               <CardTitle>{editingMatch ? 'Rediger Kamp' : 'Ny Kamp'}</CardTitle>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                  <FormGroup><Label>Dato</Label><Input type="date" value={matchForm.date} onChange={e => setMatchForm({...matchForm, date: e.target.value})} /></FormGroup>
+                  <FormGroup><Label>Tid</Label><Input type="time" value={matchForm.time} onChange={e => setMatchForm({...matchForm, time: e.target.value})} /></FormGroup>
+                  <FormGroup><Label>Motstander</Label><Input value={matchForm.opponent} onChange={e => setMatchForm({...matchForm, opponent: e.target.value})} placeholder="Lagnavn" /></FormGroup>
+                  <FormGroup><Label>Sted</Label><Input value={matchForm.location} onChange={e => setMatchForm({...matchForm, location: e.target.value})} placeholder="Arena" /></FormGroup>
+               </div>
+               <FormGroup>
+                 <Label>Motstander Logo (URL)</Label>
+                 <Input value={matchForm.logo} onChange={e => setMatchForm({...matchForm, logo: e.target.value})} placeholder="https://..." />
+               </FormGroup>
+               <div style={{display:'flex', gap:'1rem'}}>
+                  <Button onClick={handleSaveMatch}>{editingMatch ? 'Oppdater' : 'Legg til'}</Button>
+                  {editingMatch && <Button danger onClick={() => {setEditingMatch(null); setMatchForm({date:'', time:'', opponent:'', location:'', logo:''})}}>Avbryt</Button>}
+               </div>
+             </Card>
+             
+             <Card>
+                <CardTitle>Kommende Kamper</CardTitle>
+                {matches.map(m => (
+                    <ListRow key={m.id}>
+                        <div className="info">
+                            <span style={{color:'#ff4500'}}>{m.date}</span> - {m.opponent}
+                        </div>
+                        <div className="actions">
+                            <SmallBtn onClick={() => {setEditingMatch(m); setMatchForm(m); window.scrollTo(0,0)}}>Rediger</SmallBtn>
+                            <SmallBtn danger onClick={() => deleteMatch(m.id)}>Slett</SmallBtn>
+                        </div>
+                    </ListRow>
+                ))}
+             </Card>
+           </>
+        )}
+
+        {/* --- TAB: CASES (BOTKASSA) --- */}
         {activeTab === 'cases' && (
-      <Grid>
-        <Section>
-          <SectionTitle>{editingCase ? 'Rediger Rettssak' : 'Legg til Rettssak'}</SectionTitle>
-          <FormGroup>
-            <Label>Spiller</Label>
-            <Input
-              type="text"
-              name="player"
-              value={caseForm.player}
-              onChange={handleCaseChange}
-              placeholder="F.eks. Magnus Andersen"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Årsak</Label>
-            <Input
-              type="text"
-              name="reason"
-              value={caseForm.reason}
-              onChange={handleCaseChange}
-              placeholder="F.eks. For sent til trening"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Bøtebeløp (kr)</Label>
-            <Input
-              type="number"
-              name="fine"
-              value={caseForm.fine}
-              onChange={handleCaseChange}
-              min="0"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Sannsynlighet for rettssak (%)</Label>
-            <Input
-              type="number"
-              name="likelihood"
-              value={Math.round(caseForm.likelihood * 100)}
-              onChange={(e) => {
-                const value = Math.max(0, Math.min(100, Number(e.target.value)));
-                setCaseForm({ ...caseForm, likelihood: value / 100 });
-              }}
-              min="0"
-              max="100"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Runde</Label>
-            <Input
-              type="text"
-              name="round"
-              value={caseForm.round}
-              onChange={handleCaseChange}
-              placeholder="F.eks. Runde 12"
-            />
-          </FormGroup>
-          {editingCase && <Button secondary onClick={handleCancelEditCase}>Avbryt</Button>}
-          <Button onClick={handleAddCase}>{editingCase ? 'Oppdater Rettssak' : 'Legg til Rettssak'}</Button>
-        </Section>
-      </Grid>
+           <>
+            <Card>
+                <CardTitle>{editingCase ? 'Rediger Sak' : 'Ny Sak'}</CardTitle>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <FormGroup><Label>Spiller</Label><Input value={caseForm.player} onChange={e => setCaseForm({...caseForm, player: e.target.value})} /></FormGroup>
+                    <FormGroup><Label>Årsak</Label><Input value={caseForm.reason} onChange={e => setCaseForm({...caseForm, reason: e.target.value})} /></FormGroup>
+                    <FormGroup><Label>Bot (kr)</Label><Input type="number" value={caseForm.fine} onChange={e => setCaseForm({...caseForm, fine: e.target.value})} /></FormGroup>
+                    <FormGroup>
+                        <Label>Sannsynlighet ({Math.round(caseForm.likelihood * 100)}%)</Label>
+                        <input type="range" min="0" max="100" style={{width:'100%'}} value={caseForm.likelihood * 100} onChange={e => setCaseForm({...caseForm, likelihood: e.target.value / 100})} />
+                    </FormGroup>
+                </div>
+                <div style={{display:'flex', gap:'1rem'}}>
+                  <Button onClick={handleSaveCase}>{editingCase ? 'Oppdater' : 'Legg til'}</Button>
+                  {editingCase && <Button danger onClick={() => {setEditingCase(null); setCaseForm({player:'', reason:'', fine:'', likelihood:0.5, round:''})}}>Avbryt</Button>}
+                </div>
+            </Card>
+
+            <Card>
+                <CardTitle>Saker</CardTitle>
+                {cases.map(c => (
+                    <ListRow key={c.id}>
+                        <div className="info">
+                            {c.player} - {c.reason} ({c.fine} kr)
+                        </div>
+                        <div className="actions">
+                            <SmallBtn onClick={() => {setEditingCase(c); setCaseForm(c); window.scrollTo(0,0)}}>Rediger</SmallBtn>
+                            <SmallBtn danger onClick={() => deleteCase(c.id)}>Slett</SmallBtn>
+                        </div>
+                    </ListRow>
+                ))}
+            </Card>
+           </>
         )}
 
-        {activeTab === 'caseList' && (
-        <Section>
-          <SectionTitle>Rettsaker ({cases.length})</SectionTitle>
-          <List>
-            {cases.map(caseItem => (
-              <ListItem key={caseItem.id}>
-                <div className="info">
-                  {caseItem.player} - {caseItem.reason} ({Math.round(caseItem.likelihood * 100)}%)
-                </div>
-                <div className="actions">
-                  <DeleteButton onClick={() => handleEditCase(caseItem)}>Rediger</DeleteButton>
-                  <DeleteButton danger onClick={async () => {
-                    try {
-                      await deleteCase(caseItem.id);
-                      alert('Rettssak slettet!');
-                    } catch (error) {
-                      alert('Feil ved sletting av rettssak: ' + error.message);
-                    }
-                  }}>Slett</DeleteButton>
-                </div>
-              </ListItem>
-            ))}
-          </List>
-        </Section>
-        )}
-      </Container>
-    </Wrapper>
+      </MainContent>
+    </AdminWrapper>
   );
 }
 

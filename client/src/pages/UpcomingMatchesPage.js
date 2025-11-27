@@ -1,222 +1,368 @@
 import React, { useContext } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem 3rem;
-  min-height: 80vh;
+// --- Animasjoner ---
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
-  @media (min-width: 768px) {
-    padding: 3rem 2rem 4rem;
+// --- Styled Components ---
+
+const Container = styled.div`
+  min-height: 100vh;
+  padding: 4rem 1rem;
+  background-color: #050505;
+  color: white;
+  position: relative;
+  overflow-x: hidden;
+
+  /* Samme aggressive bakgrunn som Home */
+  background-image: 
+    linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(255, 69, 0, 0.1) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
   }
 `;
 
-const PageTitle = styled.h1`
-  font-size: 2rem;
+const HeaderSection = styled.div`
   text-align: center;
-  color: #fff;
-  margin-bottom: 0.5rem;
+  margin-bottom: 4rem;
+  position: relative;
+  z-index: 1;
+`;
+
+const PageTitle = styled.h1`
+  font-size: 4rem;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: -1px;
+  font-style: italic;
+  margin: 0;
+  letter-spacing: -2px;
+  color: #fff;
+  text-shadow: 4px 4px 0px #ff4500;
+  transform: skew(-5deg);
 
-  @media (min-width: 768px) {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+  span {
+    color: #ff4500;
+    text-shadow: none;
+    -webkit-text-stroke: 2px white;
   }
 
-  @media (max-width: 480px) {
-    font-size: 1.8rem;
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
   }
 `;
 
 const PageSubtitle = styled.p`
-  text-align: center;
-  color: #bdbdbd;
-  font-size: 0.95rem;
-  margin-bottom: 2.5rem;
-
-  @media (min-width: 768px) {
-    font-size: 1.1rem;
-    margin-bottom: 3rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: 700;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  
+  &::before, &::after {
+    content: '///';
+    color: #ff4500;
+    margin: 0 10px;
   }
 `;
 
 const MatchesGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
-
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 2rem;
-  }
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 `;
 
-const MatchCard = styled.article`
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(12px);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+// --- Battle Card Design ---
+const BattleCard = styled.article`
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-left: 6px solid #ff4500; /* Oransje "stripe" */
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px 1fr 150px; /* Dato - Kamp - Sted */
+  align-items: stretch;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform: skew(-10deg); /* Action vinkel */
+  margin-left: 20px; 
+  margin-right: 20px;
+  animation: ${fadeIn} 0.5s ease-out backwards;
+  animation-delay: ${props => props.index * 0.1}s;
 
   &:hover {
-    transform: translateY(-6px);
-    border-color: rgba(255,255,255,0.2);
-    box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+    transform: skew(-10deg) translateX(10px);
+    box-shadow: -10px 10px 30px rgba(0,0,0,0.5);
+    border-color: #444;
+    
+    .vs-text {
+      transform: scale(1.2) skew(10deg);
+      color: #ff4500;
+    }
   }
-`;
 
-const MatchHeader = styled.header`
-  padding: 1rem 1.4rem;
-  text-align: center;
-  background: rgba(0,0,0,0.3);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #f0f0f0;
-
-  @media (max-width: 480px) {
-    font-size: 0.85rem;
+  /* Rette opp innholdet inni */
+  > * {
+    transform: skew(10deg); 
   }
-`;
 
-const MatchBody = styled.div`
-  padding: 1.8rem 1.4rem;
-`;
-
-const TeamsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 1rem;
-
-  @media (max-width: 480px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    text-align: center;
+    grid-template-rows: auto auto auto;
+    transform: skew(0);
+    border-left: 1px solid #222;
+    border-top: 6px solid #ff4500;
+    margin: 0;
+
+    &:hover {
+      transform: translateY(-5px);
+    }
+
+    > * { transform: skew(0); }
   }
 `;
 
-const Team = styled.div`
+const DateSection = styled.div`
+  background: #161616;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  border-right: 1px solid #222;
+  text-align: center;
+
+  .day {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+  }
+  
+  .month {
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #ff4500;
+  }
+
+  .weekday {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 5px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 900px) {
+    flex-direction: row;
+    gap: 1rem;
+    border-right: none;
+    border-bottom: 1px solid #222;
+    padding: 1rem;
+    
+    .day { font-size: 1.5rem; }
+    .month { font-size: 1rem; }
+  }
+`;
+
+const MatchContent = styled.div`
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  position: relative;
+
+  /* Bakgrunns VS */
+  &::before {
+    content: 'VS';
+    position: absolute;
+    font-size: 8rem;
+    font-weight: 900;
+    font-style: italic;
+    color: rgba(255,255,255,0.02);
+    z-index: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 1rem;
+  }
+`;
+
+const TeamBlock = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
-`;
+  gap: 0.5rem;
+  z-index: 1;
+  width: 120px;
 
-const TeamLogo = styled.div`
-  font-size: 3rem;
-
-  @media (max-width: 480px) {
-    font-size: 2.6rem;
+  img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
   }
-`;
 
-const TeamName = styled.h3`
-  font-size: 1.2rem;
-  color: #ffffff;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: 0.4px;
-
-  @media (max-width: 480px) {
-    font-size: 1.05rem;
+  .name {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 1rem;
+    text-align: center;
+    line-height: 1.2;
   }
 `;
 
 const VS = styled.div`
-  font-size: 1.2rem;
+  font-size: 2rem;
   font-weight: 900;
-  color: #ff9560;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-align: center;
+  font-style: italic;
+  color: #333;
+  transition: 0.3s;
+  z-index: 1;
 
-  @media (max-width: 480px) {
-    order: -1;
+  @media (max-width: 600px) {
+    transform: rotate(90deg);
+    font-size: 1.5rem;
   }
 `;
 
-const MatchFooter = styled.footer`
-  padding: 1rem 1.4rem;
-  background: rgba(0,0,0,0.25);
-  border-top: 1px solid rgba(255,255,255,0.08);
+const InfoSection = styled.div`
+  background: #161616;
+  border-left: 1px solid #222;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  color: #c9c9c9;
-  font-size: 0.95rem;
+  justify-content: center;
+  padding: 1.5rem;
+  gap: 1rem;
 
-  span {
-    display: block;
-  }
-
-  @media (min-width: 768px) {
+  @media (max-width: 900px) {
+    border-left: none;
+    border-top: 1px solid #222;
     flex-direction: row;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
-    font-size: 1rem;
-
-    span {
-      display: inline;
-    }
   }
 `;
 
-const formatDate = (value) => {
-  if (!value) return 'Dato kunngjøres senere';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('nb-NO', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  });
-};
+const InfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
-const formatTime = (value) => (value ? value : 'Tid TBD');
+  .icon {
+    color: #ff4500;
+    font-size: 1.2rem;
+  }
+  
+  .text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #ccc;
+  }
+`;
 
-const formatLocation = (value) => (value ? value : 'Lokasjon annonseres senere');
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 4rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed #333;
+  color: #666;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 2rem;
+`;
+
+// Helper functions
+const getDay = (d) => new Date(d).getDate();
+const getMonth = (d) => new Date(d).toLocaleDateString('nb-NO', { month: 'short' }).replace('.', '');
+const getWeekday = (d) => new Date(d).toLocaleDateString('nb-NO', { weekday: 'long' });
 
 function UpcomingMatchesPage() {
   const { matches } = useContext(DataContext);
+  
+  const HOME_LOGO = '/images/standard_832px-Asker_SK_logo.svg.png';
+
+  // SORTERING: Lager en ny liste og sorterer den på dato (Ascending / Stigende)
+  // Dette sikrer at datoer nærmest i tid (eller eldste) kommer først.
+  const sortedMatches = [...matches].sort((a, b) => {
+    return new Date(a.date) - new Date(b.date);
+  });
 
   return (
     <Container>
-      <PageTitle>📅 Kommende Kamper</PageTitle>
-      <PageSubtitle>Se alle kommende kamper for Asker/Gui</PageSubtitle>
+      <HeaderSection>
+        <PageTitle>Termin<span>liste</span></PageTitle>
+        <PageSubtitle>Neste slag om poengene</PageSubtitle>
+      </HeaderSection>
 
       <MatchesGrid>
-        {matches.map(match => (
-          <MatchCard key={match.id}>
-            <MatchHeader>{formatDate(match.date)}</MatchHeader>
+        {sortedMatches.length > 0 ? (
+          sortedMatches.map((match, index) => (
+            <BattleCard key={match.id || index} index={index}>
+              
+              {/* Dato Seksjon */}
+              <DateSection>
+                <span className="day">{match.date ? getDay(match.date) : '?'}</span>
+                <span className="month">{match.date ? getMonth(match.date) : 'TBD'}</span>
+                <span className="weekday">{match.date ? getWeekday(match.date) : ''}</span>
+              </DateSection>
 
-            <MatchBody>
-              <TeamsGrid>
-                <Team>
-                  <TeamLogo>🏐</TeamLogo>
-                  <TeamName>Asker/Gui</TeamName>
-                </Team>
+              {/* Kamp Seksjon */}
+              <MatchContent>
+                <TeamBlock>
+                  <img src={HOME_LOGO} alt="Asker" />
+                  <span className="name">Asker / Gui</span>
+                </TeamBlock>
+                
+                <VS className="vs-text">VS</VS>
+                
+                <TeamBlock>
+                  {match.logo ? (
+                     <img src={match.logo} alt={match.opponent} />
+                  ) : (
+                     <div style={{fontSize: '3rem'}}>🛡️</div>
+                  )}
+                  <span className="name">{match.opponent || 'Motstander'}</span>
+                </TeamBlock>
+              </MatchContent>
 
-                <VS>VS</VS>
+              {/* Info Seksjon */}
+              <InfoSection>
+                <InfoItem>
+                  <span className="icon">⏰</span>
+                  <span className="text">{match.time || 'Tid kommer'}</span>
+                </InfoItem>
+                <InfoItem>
+                  <span className="icon">📍</span>
+                  <span className="text">{match.location || 'Hjemme'}</span>
+                </InfoItem>
+              </InfoSection>
 
-                <Team>
-                  <TeamLogo>{match.logo || '🤝'}</TeamLogo>
-                  <TeamName>{match.opponent}</TeamName>
-                </Team>
-              </TeamsGrid>
-            </MatchBody>
-
-            <MatchFooter>
-              <span>{formatTime(match.time)}</span>
-              <span>📍 {formatLocation(match.location)}</span>
-            </MatchFooter>
-          </MatchCard>
-        ))}
+            </BattleCard>
+          ))
+        ) : (
+          <EmptyState>Ingen planlagte kamper<br/><span style={{fontSize:'1rem', color:'#444'}}>Sjekk igjen senere</span></EmptyState>
+        )}
       </MatchesGrid>
     </Container>
   );
