@@ -6,13 +6,8 @@ import { DataContext } from '../context/DataContext';
 // --- Animations ---
 const pulse = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.4); }
-  70% { box-shadow: 0 0 0 20px rgba(255, 69, 0, 0); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 69, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0); }
-`;
-
-const slideInLeft = keyframes`
-  from { opacity: 0; transform: translateX(-100px) skew(-10deg); }
-  to { opacity: 1; transform: translateX(0) skew(-10deg); }
 `;
 
 const float = keyframes`
@@ -53,7 +48,7 @@ const Hero = styled.section`
   min-height: 90vh;
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Venstrejustert for action */
+  justify-content: flex-start;
   position: relative;
   z-index: 2;
 
@@ -72,17 +67,19 @@ const Hero = styled.section`
 
   @media (max-width: 1024px) {
     justify-content: center;
-    padding: 6rem 2rem;
+    padding: 6rem 1.5rem 4rem; /* Mindre padding på mobil */
     text-align: center;
+    min-height: auto; /* La innholdet bestemme høyden på mobil */
   }
 `;
 
 const HeroContent = styled.div`
   max-width: 900px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Venstrejustert */
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 1.5rem;
   
   @media (max-width: 1024px) {
     align-items: center;
@@ -92,7 +89,7 @@ const HeroContent = styled.div`
 const LogoContainer = styled.div`
   width: 150px;
   height: 150px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.3));
   animation: ${float} 6s ease-in-out infinite;
 
@@ -103,32 +100,30 @@ const LogoContainer = styled.div`
   }
 
   @media (max-width: 768px) {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    height: 100px;
   }
 `;
 
 const Title = styled.h1`
-  font-size: 7rem;
+  /* Clamp for perfekt skalering på alle skjermer */
+  font-size: clamp(3.5rem, 10vw, 7rem); 
   line-height: 0.9;
   font-weight: 900;
   font-style: italic;
   text-transform: uppercase;
   margin: 0;
   color: white;
-  transform: skew(-5deg); /* Fart! */
-  text-shadow: 5px 5px 0px rgba(255, 69, 0, 0.2);
-  letter-spacing: -3px;
+  transform: skew(-5deg);
+  text-shadow: 4px 4px 0px rgba(255, 69, 0, 0.2);
+  letter-spacing: -2px;
   
   span {
-    color: #ff4500; /* Asker Orange */
+    color: #ff4500;
   }
 
-  @media (max-width: 1024px) {
-    font-size: 5rem;
-  }
   @media (max-width: 768px) {
-    font-size: 3.5rem;
+    text-shadow: 2px 2px 0px rgba(255, 69, 0, 0.3);
   }
 `;
 
@@ -136,53 +131,56 @@ const Subtitle = styled.div`
   font-size: 1.8rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   color: #ccc;
   border-left: 5px solid #ff4500;
   padding-left: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   transform: skew(-5deg);
 
   @media (max-width: 1024px) {
     border-left: none;
-    border-bottom: 4px solid #ff4500;
+    border-bottom: 3px solid #ff4500;
     padding-left: 0;
-    padding-bottom: 0.5rem;
-  }
-  @media (max-width: 768px) {
-    font-size: 1.2rem;
+    padding-bottom: 0.8rem;
+    font-size: 1rem; /* Mindre font på mobil */
+    letter-spacing: 2px;
   }
 `;
 
-// --- Fight Card / Match Display ---
+// --- Fight Card (Optimalisert for mobil) ---
 const FightCard = styled.div`
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 3rem;
   background: linear-gradient(135deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.95) 100%);
   border: 1px solid rgba(255,255,255,0.1);
-  padding: 1.5rem 3rem;
-  transform: skew(-10deg); /* Action Shape */
+  padding: 2rem 4rem;
+  transform: skew(-10deg);
   border-left: 6px solid #ff4500;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-  margin: 2rem 0;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  margin: 1.5rem 0;
   position: relative;
+  width: auto;
 
-  /* Innholdet må skews tilbake for å være leselig */
   > * {
     transform: skew(10deg);
   }
 
+  /* Mobil Styles for Fight Card */
   @media (max-width: 768px) {
-    flex-direction: row; /* Keep row even on mobile if possible */
-    padding: 1rem;
-    gap: 0.5rem;
-    transform: skew(0); /* Fjern skew på veldig liten skjerm */
-    > * { transform: skew(0); }
+    flex-direction: column; /* Stable lagene vertikalt */
+    width: 100%;
+    padding: 2rem 1rem;
+    gap: 1rem;
+    transform: skew(0); /* Fjern skew for renere look på mobil */
     border-left: none;
     border-top: 4px solid #ff4500;
-    width: 100%;
-    justify-content: space-around;
+    border-bottom: 4px solid #ff4500;
+    background: rgba(10,10,10,0.8);
+    backdrop-filter: blur(10px);
+    
+    > * { transform: skew(0); }
   }
 `;
 
@@ -192,58 +190,67 @@ const TeamBlock = styled.div`
   align-items: center;
   
   img {
-    width: 90px;
-    height: 90px;
+    width: 100px;
+    height: 100px;
     object-fit: contain;
-    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+    filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));
   }
   
   span {
-    font-weight: 800;
-    font-size: 1.2rem;
+    font-weight: 900;
+    font-size: 1.4rem;
     text-transform: uppercase;
-    margin-top: 0.5rem;
+    margin-top: 0.8rem;
     letter-spacing: 1px;
+    text-align: center;
   }
 
   @media (max-width: 768px) {
-    img { width: 60px; height: 60px; }
-    span { font-size: 0.9rem; }
+    img { width: 80px; height: 80px; }
+    span { font-size: 1.5rem; color: #fff; }
   }
 `;
 
 const VS = styled.div`
-  font-size: 4rem;
+  font-size: 5rem;
   font-weight: 900;
   font-style: italic;
   color: transparent;
-  -webkit-text-stroke: 2px rgba(255,255,255,0.2);
+  -webkit-text-stroke: 2px rgba(255,255,255,0.3);
   position: relative;
   z-index: 0;
+  line-height: 1;
   
   &::after {
     content: 'VS';
     position: absolute;
     top: 0; left: 0;
     color: #ff4500;
-    opacity: 0.8;
+    opacity: 0.9;
     transform: translate(4px, 4px);
     z-index: -1;
   }
 
   @media (max-width: 768px) {
-    font-size: 2.5rem;
+    font-size: 3rem;
+    margin: 0.5rem 0;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.3);
+    
+    &::after {
+        transform: translate(2px, 2px);
+    }
   }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: 1.5rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
   
   @media (max-width: 768px) {
     flex-direction: column;
     width: 100%;
+    gap: 1rem;
   }
 `;
 
@@ -261,6 +268,7 @@ const ButtonStyles = css`
   align-items: center;
   position: relative;
   overflow: hidden;
+  text-align: center;
 
   /* Shine effect */
   &::before {
@@ -281,9 +289,21 @@ const ButtonStyles = css`
     box-shadow: 0 10px 20px rgba(255, 69, 0, 0.3);
   }
 
-  /* Fix text inside skew */
   span {
     transform: skew(10deg);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%; /* Full bredde på mobil */
+    padding: 1rem;
+    font-size: 1rem;
+    
+    /* Behold skew for stil, men mindre padding */
+    transform: skew(-10deg);
+    
+    &:hover {
+        transform: skew(-10deg) translateY(-2px);
+    }
   }
 `;
 
@@ -311,21 +331,25 @@ const LiveBtn = styled.a`
   }
 `;
 
-// --- Man of the Match (Card Style) ---
+// --- Man of the Match ---
 const MotmSection = styled.section`
   padding: 4rem 2rem;
   position: relative;
   z-index: 2;
-  background: linear-gradient(180deg, transparent 0%, rgba(20,20,20,0.8) 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(15,15,15,0.9) 100%);
+  
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
 `;
 
 const SectionHeader = styled.h2`
   text-align: center;
-  font-size: 3rem;
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 900;
   text-transform: uppercase;
   font-style: italic;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
   color: white;
   
   span { color: #ff4500; }
@@ -333,17 +357,18 @@ const SectionHeader = styled.h2`
 
 const PlayerCard = styled.div`
   max-width: 400px;
+  width: 100%;
   margin: 0 auto;
   background: #111;
   border: 1px solid #333;
   position: relative;
+  /* Skrå kutt i hjørnene */
   clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
   transition: transform 0.3s ease;
 
   &:hover {
-    transform: translateY(-10px);
+    transform: translateY(-5px);
     border-color: #ff4500;
-    box-shadow: 0 0 30px rgba(255, 69, 0, 0.2);
   }
 `;
 
@@ -361,16 +386,15 @@ const CardImage = styled.div`
     transition: 0.5s ease;
   }
 
-  /* Team overlay on image */
   &::after {
     content: '';
     position: absolute;
-    bottom: 0; left: 0; width: 100%; height: 50%;
+    bottom: 0; left: 0; width: 100%; height: 60%;
     background: linear-gradient(to top, #111 0%, transparent 100%);
   }
-
-  ${PlayerCard}:hover img {
-    filter: grayscale(0%) contrast(1.1) scale(1.05);
+  
+  @media (max-width: 768px) {
+    height: 350px; /* Litt mindre på mobil */
   }
 `;
 
@@ -382,15 +406,16 @@ const CardContent = styled.div`
 
 const CardBadge = styled.div`
   position: absolute;
-  top: -20px;
+  top: -15px;
   left: 50%;
   transform: translateX(-50%);
   background: #ff4500;
   color: white;
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem 1.2rem;
   font-weight: 900;
   text-transform: uppercase;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  /* Action shape på badge også */
   clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
 `;
 
@@ -400,11 +425,15 @@ const PlayerName = styled.h3`
   text-transform: uppercase;
   font-weight: 900;
   font-style: italic;
+  
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+  }
 `;
 
 const PlayerMeta = styled.p`
   color: #888;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
   margin-bottom: 1.5rem;
@@ -425,61 +454,63 @@ const StatItem = styled.div`
   .lbl { font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: 700; margin-top: 5px; }
 `;
 
-// --- Features Grid (Industrial Style) ---
+// --- Features Grid ---
 const FeaturesSection = styled.section`
   padding: 4rem 2rem;
   max-width: 1300px;
   margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
 `;
 
 const FeaturesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
 `;
 
 const FeatureBox = styled.div`
   background: #0a0a0a;
-  padding: 2.5rem;
+  padding: 2rem;
   border: 1px solid #222;
   position: relative;
   transition: 0.3s;
   
-  /* Corner accents */
   &::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 0; height: 2px;
+    top: 0; left: 0; width: 0; height: 3px;
     background: #ff4500;
     transition: 0.4s;
   }
 
   &:hover::before { width: 100%; }
-  
-  &:hover {
-    background: #111;
-    transform: translateY(-5px);
-  }
+  &:hover { background: #111; }
 
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     text-transform: uppercase;
     font-weight: 800;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    margin-bottom: 0.8rem;
+    color: white;
   }
 
-  p { color: #888; line-height: 1.6; }
+  p { color: #888; line-height: 1.5; font-size: 0.95rem; }
 `;
 
 const StatsBar = styled.div`
   background: #ff4500;
   color: black;
   padding: 3rem 1rem;
-  margin-top: 4rem;
-  transform: skewY(-2deg); /* Hele seksjonen er skråstilt */
+  margin-top: 2rem;
+  transform: skewY(-2deg);
+  
+  @media (max-width: 768px) {
+    transform: skewY(0); /* Fjern skew på mobil for bedre lesbarhet */
+    padding: 2.5rem 1rem;
+  }
 `;
 
 const StatsContent = styled.div`
@@ -489,21 +520,22 @@ const StatsContent = styled.div`
   justify-content: space-around;
   flex-wrap: wrap;
   gap: 2rem;
-  transform: skewY(2deg); /* Teksten rettes opp igjen */
+  transform: skewY(2deg);
 
-  div {
-    text-align: center;
+  @media (max-width: 768px) {
+    transform: skewY(0);
+    gap: 2.5rem; /* Mer luft mellom tallene på mobil */
   }
-  
-  .num { font-size: 3.5rem; font-weight: 900; display: block; }
-  .lbl { font-weight: 700; text-transform: uppercase; font-size: 1.1rem; }
+
+  div { text-align: center; }
+  .num { font-size: 3rem; font-weight: 900; display: block; line-height: 1; }
+  .lbl { font-weight: 700; text-transform: uppercase; font-size: 0.9rem; margin-top: 5px; opacity: 0.8; }
 `;
 
 function HomePage() {
   const { motm, matchData } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   
-  // Data fallback
   const currentMatch = {
     homeTeam: 'Asker',
     awayTeam: 'HSIL', 
@@ -517,7 +549,6 @@ function HomePage() {
     <Container>
       <Hero>
         <HeroContent>
-          {/* Logo animasjon */}
           <LogoContainer>
             {logo ? <img src={logo} alt="Asker Logo" /> : <div className="placeholder">🦁</div>}
           </LogoContainer>
@@ -559,7 +590,6 @@ function HomePage() {
         <SectionHeader>Kampens <span>Gigant</span></SectionHeader>
         <PlayerCard>
           <CardImage>
-            {/* Fallback image logic */}
             {motm.image && (motm.image.startsWith('data:') || motm.image.startsWith('http')) ? (
               <img src={motm.image} alt={motm.player} />
             ) : (

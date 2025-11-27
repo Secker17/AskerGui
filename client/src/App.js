@@ -5,6 +5,7 @@ import styled, { createGlobalStyle, css } from 'styled-components';
 // Sider
 import HomePage from './pages/HomePage';
 import UpcomingMatchesPage from './pages/UpcomingMatchesPage';
+import PlayersPage from './pages/PlayersPage';
 import AdminPage from './pages/AdminPage';
 import AdminPinPage from './pages/AdminPinPage';
 import { DataProvider } from './context/DataContext';
@@ -325,6 +326,9 @@ function App() {
                 <StyledLink to="/">
                   <span>Hjem</span>
                 </StyledLink>
+                <StyledLink to="/players">
+                  <span>Spillere</span>
+                </StyledLink>
                 <StyledLink to="/matches">
                   <span>Kamper</span>
                 </StyledLink>
@@ -353,6 +357,7 @@ function App() {
           {/* Fullskjerm mobilmeny */}
           <MobileDropdown open={menuOpen}>
             <MobileLink to="/" onClick={closeMenu}>Hjem</MobileLink>
+            <MobileLink to="/players" onClick={closeMenu}>Spillere</MobileLink>
             <MobileLink to="/matches" onClick={closeMenu}>Terminliste</MobileLink>
             <MobileExtLink href="https://domstol.vercel.app/" target="_blank" onClick={closeMenu}>
               Botkassa ↗
@@ -363,6 +368,7 @@ function App() {
           {/* Hovedinnhold */}
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/players" element={<PlayersPage />} />
             <Route path="/matches" element={<UpcomingMatchesPage />} />
             <Route path="/admin-pin" element={<AdminPinPage />} />
             <Route path="/admin" element={<AdminPage />} />

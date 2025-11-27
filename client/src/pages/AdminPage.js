@@ -53,6 +53,7 @@ const Sidebar = styled.aside`
     left: ${props => props.open ? '0' : '-100%'};
     width: 280px;
     transition: left 0.3s ease;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
   }
 `;
 
@@ -118,11 +119,15 @@ const MainContent = styled.main`
 
 const Header = styled.header`
   margin-bottom: 3rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1rem;
+  
   h2 {
     font-size: 2.5rem;
     font-weight: 800;
     margin: 0;
     text-transform: uppercase;
+    font-style: italic;
   }
   p {
     color: #888;
@@ -135,19 +140,18 @@ const Header = styled.header`
 const Card = styled.div`
   background: #0f0f0f;
   border: 1px solid #222;
-  border-radius: 12px;
+  border-radius: 4px; /* Sharper corners for action feel */
   padding: 2rem;
   margin-bottom: 2rem;
   position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 
   /* Orange accent top */
   &::before {
     content: '';
     position: absolute;
-    top: 0; left: 20px; right: 20px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #ff4500, transparent);
-    opacity: 0.5;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: #ff4500;
   }
 `;
 
@@ -155,11 +159,13 @@ const CardTitle = styled.h3`
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
   text-transform: uppercase;
-  font-weight: 700;
-  color: #ddd;
+  font-weight: 800;
+  color: #fff;
   display: flex;
   align-items: center;
   gap: 10px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1rem;
 `;
 
 const FormGroup = styled.div`
@@ -168,10 +174,10 @@ const FormGroup = styled.div`
 
 const Label = styled.label`
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #888;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.5rem;
   letter-spacing: 0.5px;
 `;
@@ -182,14 +188,15 @@ const Input = styled.input`
   border: 1px solid #333;
   padding: 1rem;
   color: white;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 1rem;
   transition: all 0.3s ease;
+  font-family: monospace; 
 
   &:focus {
     outline: none;
     border-color: #ff4500;
-    box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.2);
+    background: #000;
   }
 `;
 
@@ -199,7 +206,7 @@ const Select = styled.select`
   border: 1px solid #333;
   padding: 1rem;
   color: white;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 1rem;
   cursor: pointer;
 
@@ -214,67 +221,96 @@ const Button = styled.button`
   color: white;
   border: none;
   padding: 1rem 2rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.3s;
-  border-radius: 4px;
+  transition: all 0.2s;
+  transform: skew(-10deg); /* Action style buttons */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  min-width: 120px;
   opacity: ${props => props.disabled ? 0.6 : 1};
 
+  /* Unskew text inside */
+  span { transform: skew(10deg); }
+
   &:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
+    filter: brightness(1.2);
+    transform: skew(-10deg) translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: skew(-10deg) translateY(0);
   }
 `;
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1.5rem;
 `;
 
 const ItemCard = styled.div`
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  overflow: hidden;
+  background: #111;
+  border: 1px solid #222;
   position: relative;
   transition: transform 0.2s;
+  /* Slight skew for cards too */
+  transform: skew(-2deg); 
 
   &:hover {
-    transform: translateY(-4px);
-    border-color: #555;
+    transform: skew(-2deg) translateY(-5px);
+    border-color: #ff4500;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
   }
 
   .img-wrapper {
-    height: 150px;
-    background: #111;
+    height: 180px;
+    background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-bottom: 1px solid #222;
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transform: skew(2deg); /* Counter skew */
     }
     
     .placeholder {
       font-size: 3rem;
+      transform: skew(2deg);
     }
   }
 
   .content {
-    padding: 1rem;
+    padding: 1.2rem;
+    transform: skew(2deg); /* Counter skew text */
   }
 
-  h4 { margin: 0 0 0.5rem 0; color: white; }
-  p { margin: 0 0 1rem 0; color: #888; font-size: 0.9rem; }
+  h4 { 
+    margin: 0 0 0.2rem 0; 
+    color: white; 
+    font-size: 1.1rem; 
+    text-transform: uppercase;
+    font-weight: 800;
+    font-style: italic;
+  }
+  
+  p { 
+    margin: 0 0 1rem 0; 
+    color: #ff4500; 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    text-transform: uppercase;
+  }
 
   .actions {
     display: flex;
@@ -283,17 +319,17 @@ const ItemCard = styled.div`
 `;
 
 const SmallBtn = styled(Button)`
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.75rem;
   width: 100%;
-  justify-content: center;
+  min-width: auto;
 `;
 
 // Image Upload Styles
 const UploadBox = styled.label`
-  border: 2px dashed #444;
+  border: 2px dashed #333;
   background: rgba(255,255,255,0.02);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 2rem;
   text-align: center;
   cursor: pointer;
@@ -309,13 +345,15 @@ const UploadBox = styled.label`
     display: block;
     color: #888;
     margin-top: 0.5rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
   }
 `;
 
 const PreviewBox = styled.div`
   margin-top: 1rem;
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border: 1px solid #333;
   background: #000;
   display: flex;
@@ -333,14 +371,25 @@ const ListRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1a1a1a;
-  padding: 1rem;
-  border-bottom: 1px solid #333;
+  background: #111;
+  padding: 1.2rem;
+  border-bottom: 1px solid #222;
+  transition: 0.2s;
+  
+  &:hover {
+    background: #161616;
+  }
   
   &:last-child { border-bottom: none; }
 
-  .info { font-weight: 600; }
-  .actions { display: flex; gap: 1rem; }
+  .info { 
+    font-weight: 700; 
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    color: #ddd;
+  }
+  
+  .actions { display: flex; gap: 0.5rem; }
 `;
 
 function AdminPage() {
@@ -354,6 +403,7 @@ function AdminPage() {
   const [motmForm, setMotmForm] = useState(motm);
   const [editingMatch, setEditingMatch] = useState(null);
   const [editingCase, setEditingCase] = useState(null);
+  const [editingPlayer, setEditingPlayer] = useState(null); // Ny state for redigering av spiller
   const [loading, setLoading] = useState(false);
 
   // Match Data Form
@@ -368,7 +418,7 @@ function AdminPage() {
 
   // Player Form
   const [playerForm, setPlayerForm] = useState({
-    name: '', number: '', position: '', imagePreview: null
+    name: '', number: '', position: '', imagePreview: null, image: ''
   });
 
   // Mobile Check
@@ -387,9 +437,9 @@ function AdminPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (keyName === 'previewOnly') {
-            setterFunc(reader.result); // Just sets the preview string
+            setterFunc(reader.result); 
         } else {
-            setterFunc(prev => ({ ...prev, [keyName]: reader.result }));
+            setterFunc(prev => ({ ...prev, [keyName]: reader.result, imagePreview: reader.result }));
         }
       };
       reader.readAsDataURL(file);
@@ -402,17 +452,50 @@ function AdminPage() {
   };
 
   // Player Handlers
-  const handleAddPlayer = async () => {
+  const handleEditPlayer = (player) => {
+    setEditingPlayer(player);
+    setPlayerForm({
+      name: player.name,
+      number: player.number,
+      position: player.position,
+      image: player.image,
+      imagePreview: player.image 
+    });
+    window.scrollTo(0,0);
+  };
+
+  const handleCancelEditPlayer = () => {
+    setEditingPlayer(null);
+    setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '' });
+  };
+
+  const handleSavePlayer = async () => {
     if (!playerForm.name || !playerForm.number) return alert('Mangler navn eller nummer');
     setLoading(true);
+    
     try {
-      await addPlayer({
+      const playerData = {
         name: playerForm.name,
         number: playerForm.number,
         position: playerForm.position,
-        image: playerForm.imagePreview || '🦁'
-      });
-      setPlayerForm({ name: '', number: '', position: '', imagePreview: null });
+        image: playerForm.imagePreview || playerForm.image || '🦁' // Bruk eksisterende eller placeholder
+      };
+
+      if (editingPlayer) {
+        // Logikken for oppdatering: Slett gammel ID, legg til ny (eller oppdater hvis context støtter det)
+        // Her antar vi at addPlayer genererer ny ID, men vi vil beholde dataene.
+        // For enkelhets skyld i denne demoen: Slett gammel, legg til oppdatert.
+        await deletePlayer(editingPlayer.id);
+        await addPlayer(playerData);
+        setEditingPlayer(null);
+        alert('Spiller oppdatert!');
+      } else {
+        await addPlayer(playerData);
+        alert('Spiller lagt til!');
+      }
+      
+      setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '' });
+      
     } catch (e) { alert(e.message); }
     setLoading(false);
   };
@@ -467,7 +550,7 @@ function AdminPage() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff', flexDirection: 'column', gap: '1rem' }}>
         <h2>💻 Gå til PC</h2>
         <p>Admin-panelet krever større skjerm.</p>
-        <Button onClick={() => navigate('/')}>Tilbake</Button>
+        <Button onClick={() => navigate('/')}><span>Tilbake</span></Button>
       </div>
     );
   }
@@ -485,7 +568,7 @@ function AdminPage() {
         <MenuGroup>
           <MenuLabel>Dashbord</MenuLabel>
           <MenuItem active={activeTab === 'matchData'} onClick={() => setActiveTab('matchData')}>
-            <span>⚔️</span> Dagens Kamp (Forside)
+            <span>⚔️</span> Dagens Kamp
           </MenuItem>
           <MenuItem active={activeTab === 'motm'} onClick={() => setActiveTab('motm')}>
              <span>⭐</span> Man of the Match
@@ -495,7 +578,7 @@ function AdminPage() {
         <MenuGroup>
           <MenuLabel>Database</MenuLabel>
           <MenuItem active={activeTab === 'players'} onClick={() => setActiveTab('players')}>
-            <span>👥</span> Spillere
+            <span>👥</span> Spillerstall
           </MenuItem>
           <MenuItem active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
             <span>📅</span> Terminliste
@@ -509,7 +592,7 @@ function AdminPage() {
           <Button danger onClick={async () => {
              if(window.confirm('SLETT ALT? Dette kan ikke angres.')) await clearAllData();
           }} style={{ width: '100%', fontSize: '0.8rem' }}>
-             🗑️ Reset Database
+             <span>🗑️ Reset Database</span>
           </Button>
         </div>
       </Sidebar>
@@ -523,7 +606,7 @@ function AdminPage() {
             {activeTab === 'matches' && 'Terminliste'}
             {activeTab === 'cases' && 'Botkassa'}
           </h2>
-          <p>Endringer her oppdaterer appen umiddelbart.</p>
+          <p>Endringer lagres umiddelbart i Firebase.</p>
         </Header>
 
         {/* --- TAB: MATCH DATA (DAGENS KAMP) --- */}
@@ -556,7 +639,7 @@ function AdminPage() {
                             accept="image/*" 
                             onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('homeLogo', val), 'previewOnly')} 
                          />
-                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller lim inn URL under:</p>
+                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
                          <Input value={matchData.homeLogo} onChange={e => handleUpdateMatchData('homeLogo', e.target.value)} placeholder="URL..." />
                     </div>
                     <PreviewBox>
@@ -574,7 +657,7 @@ function AdminPage() {
                             accept="image/*" 
                             onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('awayLogo', val), 'previewOnly')} 
                          />
-                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller lim inn URL under:</p>
+                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
                          <Input value={matchData.awayLogo} onChange={e => handleUpdateMatchData('awayLogo', e.target.value)} placeholder="URL..." />
                     </div>
                     <PreviewBox>
@@ -582,16 +665,16 @@ function AdminPage() {
                     </PreviewBox>
                 </div>
               </FormGroup>
-              <Button onClick={() => alert('Dagens kamp er oppdatert automatisk i context!')}>Bekreft Endringer</Button>
+              <Button onClick={() => alert('Dagens kamp er oppdatert automatisk i context!')}><span>Bekreft Endringer</span></Button>
             </Card>
           </div>
         )}
 
-        {/* --- TAB: PLAYERS --- */}
+        {/* --- TAB: PLAYERS (MED REDIGERING) --- */}
         {activeTab === 'players' && (
           <>
             <Card>
-              <CardTitle>Legg til ny kriger</CardTitle>
+              <CardTitle>{editingPlayer ? 'Rediger Spiller' : 'Ny Spiller'}</CardTitle>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <FormGroup>
                     <Label>Navn</Label>
@@ -610,7 +693,7 @@ function AdminPage() {
                  <Label>Spillerbilde</Label>
                  <UploadBox>
                     <input type="file" hidden onChange={(e) => handleFileUpload(e, setPlayerForm, 'imagePreview')} />
-                    📸 Last opp bilde
+                    <span>📸 Last opp bilde</span>
                  </UploadBox>
                  {playerForm.imagePreview && (
                     <PreviewBox style={{marginTop: '1rem'}}>
@@ -618,11 +701,18 @@ function AdminPage() {
                     </PreviewBox>
                  )}
               </FormGroup>
-              <Button onClick={handleAddPlayer} disabled={loading}>
-                 {loading ? 'Laster opp...' : 'Legg til Spiller'}
-              </Button>
+              
+              <div style={{display:'flex', gap:'1rem'}}>
+                  <Button onClick={handleSavePlayer} disabled={loading}>
+                     <span>{loading ? 'Lagrer...' : (editingPlayer ? 'Oppdater Spiller' : 'Legg til Spiller')}</span>
+                  </Button>
+                  {editingPlayer && (
+                      <Button danger onClick={handleCancelEditPlayer}><span>Avbryt</span></Button>
+                  )}
+              </div>
             </Card>
 
+            <h3 style={{marginTop:'3rem', marginBottom:'1rem', textTransform:'uppercase'}}>Spillere i troppen ({players.length})</h3>
             <Grid>
               {players.map(p => (
                 <ItemCard key={p.id}>
@@ -632,7 +722,10 @@ function AdminPage() {
                   <div className="content">
                     <h4>{p.name}</h4>
                     <p>#{p.number} • {p.position}</p>
-                    <SmallBtn danger onClick={() => deletePlayer(p.id)}>Slett</SmallBtn>
+                    <div className="actions">
+                        <SmallBtn onClick={() => handleEditPlayer(p)}><span>Rediger</span></SmallBtn>
+                        <SmallBtn danger onClick={() => deletePlayer(p.id)}><span>Slett</span></SmallBtn>
+                    </div>
                   </div>
                 </ItemCard>
               ))}
@@ -676,7 +769,7 @@ function AdminPage() {
                 <Label>Bilde (Override)</Label>
                 <UploadBox>
                     <input type="file" hidden onChange={(e) => handleFileUpload(e, setMotmForm, 'image')} />
-                    📸 Last opp nytt bilde
+                    <span>📸 Last opp nytt bilde</span>
                 </UploadBox>
                 {motmForm.image && motmForm.image.length > 20 && (
                      <PreviewBox>
@@ -684,7 +777,7 @@ function AdminPage() {
                      </PreviewBox>
                 )}
              </FormGroup>
-             <Button onClick={handleSaveMotm}>Publiser MOTM</Button>
+             <Button onClick={handleSaveMotm}><span>Publiser MOTM</span></Button>
           </Card>
         )}
 
@@ -704,8 +797,8 @@ function AdminPage() {
                  <Input value={matchForm.logo} onChange={e => setMatchForm({...matchForm, logo: e.target.value})} placeholder="https://..." />
                </FormGroup>
                <div style={{display:'flex', gap:'1rem'}}>
-                  <Button onClick={handleSaveMatch}>{editingMatch ? 'Oppdater' : 'Legg til'}</Button>
-                  {editingMatch && <Button danger onClick={() => {setEditingMatch(null); setMatchForm({date:'', time:'', opponent:'', location:'', logo:''})}}>Avbryt</Button>}
+                  <Button onClick={handleSaveMatch}><span>{editingMatch ? 'Oppdater' : 'Legg til'}</span></Button>
+                  {editingMatch && <Button danger onClick={() => {setEditingMatch(null); setMatchForm({date:'', time:'', opponent:'', location:'', logo:''})}}><span>Avbryt</span></Button>}
                </div>
              </Card>
              
@@ -717,8 +810,8 @@ function AdminPage() {
                             <span style={{color:'#ff4500'}}>{m.date}</span> - {m.opponent}
                         </div>
                         <div className="actions">
-                            <SmallBtn onClick={() => {setEditingMatch(m); setMatchForm(m); window.scrollTo(0,0)}}>Rediger</SmallBtn>
-                            <SmallBtn danger onClick={() => deleteMatch(m.id)}>Slett</SmallBtn>
+                            <SmallBtn onClick={() => {setEditingMatch(m); setMatchForm(m); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn>
+                            <SmallBtn danger onClick={() => deleteMatch(m.id)}><span>Slett</span></SmallBtn>
                         </div>
                     </ListRow>
                 ))}
@@ -741,8 +834,8 @@ function AdminPage() {
                     </FormGroup>
                 </div>
                 <div style={{display:'flex', gap:'1rem'}}>
-                  <Button onClick={handleSaveCase}>{editingCase ? 'Oppdater' : 'Legg til'}</Button>
-                  {editingCase && <Button danger onClick={() => {setEditingCase(null); setCaseForm({player:'', reason:'', fine:'', likelihood:0.5, round:''})}}>Avbryt</Button>}
+                  <Button onClick={handleSaveCase}><span>{editingCase ? 'Oppdater' : 'Legg til'}</span></Button>
+                  {editingCase && <Button danger onClick={() => {setEditingCase(null); setCaseForm({player:'', reason:'', fine:'', likelihood:0.5, round:''})}}><span>Avbryt</span></Button>}
                 </div>
             </Card>
 
@@ -754,8 +847,8 @@ function AdminPage() {
                             {c.player} - {c.reason} ({c.fine} kr)
                         </div>
                         <div className="actions">
-                            <SmallBtn onClick={() => {setEditingCase(c); setCaseForm(c); window.scrollTo(0,0)}}>Rediger</SmallBtn>
-                            <SmallBtn danger onClick={() => deleteCase(c.id)}>Slett</SmallBtn>
+                            <SmallBtn onClick={() => {setEditingCase(c); setCaseForm(c); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn>
+                            <SmallBtn danger onClick={() => deleteCase(c.id)}><span>Slett</span></SmallBtn>
                         </div>
                     </ListRow>
                 ))}
