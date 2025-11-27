@@ -17,6 +17,27 @@ const Wrapper = styled.div`
   }
 `;
 
+const MobileNav = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #0a0a0a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+
+const HamburgerButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+`;
+
 const Sidebar = styled.aside`
   background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 100%);
   border-right: 1px solid rgba(255,255,255,0.08);
@@ -510,6 +531,7 @@ function AdminPage() {
   const [uploadingPlayer, setUploadingPlayer] = useState(false);
   
   // Sjekk om bruker er på PC/desktop
+<<<<<<< HEAD
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
   
   // Sjekk PIN-kode autentisering
@@ -560,6 +582,8 @@ function AdminPage() {
       </div>
     );
   }
+=======
+>>>>>>> ef218cddceb399a44eca7e6cfb0659270e15e4b2
 
   const closeSidebar = () => setSidebarOpen(false);
   const selectTab = (tab) => {
@@ -768,6 +792,10 @@ function AdminPage() {
 
   return (
     <Wrapper>
+      <MobileNav>
+        <Title style={{ fontSize: '1.2rem', margin: 0 }}>Admin Meny</Title>
+        <HamburgerButton onClick={() => setSidebarOpen(true)}>☰</HamburgerButton>
+      </MobileNav>
       <Sidebar open={sidebarOpen}>
         <CloseSidebar onClick={closeSidebar}>✕</CloseSidebar>
         

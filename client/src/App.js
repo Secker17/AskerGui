@@ -178,7 +178,7 @@ function App() {
       <Router>
         <NavBar>
           <Logo to="/" onClick={closeMenu}>
-            🦁 Asker/Gui
+             Asker/Gui, (Herrer)
           </Logo>
           <HamburgerButton open={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>
             <span></span>

@@ -177,6 +177,11 @@ const MotmStats = styled.div`
   @media (max-width: 768px) {
     gap: 1.5rem;
   }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 1rem;
+  }
 `;
 
 const MotmStat = styled.div`
@@ -603,6 +608,11 @@ const StatsGrid = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   text-align: center;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
 `;
 
 const StatCard = styled.div`
