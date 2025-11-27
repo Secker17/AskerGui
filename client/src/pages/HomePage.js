@@ -16,6 +16,14 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
+// Ny animasjon for "Seier"-stempel
+const slam = keyframes`
+  0% { transform: scale(5) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(0.8) rotate(-15deg); opacity: 1; }
+  80% { transform: scale(1.1) rotate(-15deg); }
+  100% { transform: scale(1) rotate(-15deg); }
+`;
+
 // --- Styled Components ---
 
 const Container = styled.div`
@@ -52,7 +60,6 @@ const Hero = styled.section`
   position: relative;
   z-index: 2;
 
-  /* Bakgrunns-element (Røyk/Glød) */
   &::before {
     content: '';
     position: absolute;
@@ -67,9 +74,9 @@ const Hero = styled.section`
 
   @media (max-width: 1024px) {
     justify-content: center;
-    padding: 6rem 1.5rem 4rem; /* Mindre padding på mobil */
+    padding: 6rem 1.5rem 4rem; 
     text-align: center;
-    min-height: auto; /* La innholdet bestemme høyden på mobil */
+    min-height: auto; 
   }
 `;
 
@@ -106,7 +113,6 @@ const LogoContainer = styled.div`
 `;
 
 const Title = styled.h1`
-  /* Clamp for perfekt skalering på alle skjermer */
   font-size: clamp(3.5rem, 10vw, 7rem); 
   line-height: 0.9;
   font-weight: 900;
@@ -143,16 +149,17 @@ const Subtitle = styled.div`
     border-bottom: 3px solid #ff4500;
     padding-left: 0;
     padding-bottom: 0.8rem;
-    font-size: 1rem; /* Mindre font på mobil */
+    font-size: 1rem; 
     letter-spacing: 2px;
   }
 `;
 
-// --- Fight Card (Optimalisert for mobil) ---
+// --- Fight Card (Med Resultat Logikk) ---
 const FightCard = styled.div`
   display: flex;
   align-items: center;
-  gap: 3rem;
+  justify-content: space-between; /* Spre elementene */
+  gap: 2rem;
   background: linear-gradient(135deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.95) 100%);
   border: 1px solid rgba(255,255,255,0.1);
   padding: 2rem 4rem;
@@ -162,6 +169,7 @@ const FightCard = styled.div`
   margin: 1.5rem 0;
   position: relative;
   width: auto;
+  min-width: 600px; /* Sikre bredde for resultatet */
 
   > * {
     transform: skew(10deg);
@@ -169,11 +177,12 @@ const FightCard = styled.div`
 
   /* Mobil Styles for Fight Card */
   @media (max-width: 768px) {
-    flex-direction: column; /* Stable lagene vertikalt */
+    flex-direction: column; 
     width: 100%;
+    min-width: auto;
     padding: 2rem 1rem;
-    gap: 1rem;
-    transform: skew(0); /* Fjern skew for renere look på mobil */
+    gap: 1.5rem;
+    transform: skew(0); 
     border-left: none;
     border-top: 4px solid #ff4500;
     border-bottom: 4px solid #ff4500;
@@ -188,12 +197,16 @@ const TeamBlock = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
   
   img {
     width: 100px;
     height: 100px;
     object-fit: contain;
     filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));
+    /* Gjør taperens logo litt mørkere hvis kampen er ferdig */
+    opacity: ${props => props.$isLoser ? 0.5 : 1};
+    filter: ${props => props.$isLoser ? 'grayscale(100%)' : 'none'};
   }
   
   span {
@@ -203,11 +216,37 @@ const TeamBlock = styled.div`
     margin-top: 0.8rem;
     letter-spacing: 1px;
     text-align: center;
+    color: ${props => props.$isWinner ? '#ff4500' : 'white'};
   }
 
   @media (max-width: 768px) {
     img { width: 80px; height: 80px; }
-    span { font-size: 1.5rem; color: #fff; }
+    span { font-size: 1.5rem; }
+  }
+`;
+
+// Ny komponent: Vinner-stempel
+const WinnerStamp = styled.div`
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-15deg);
+  border: 4px solid #ff4500;
+  color: #ff4500;
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 0.2rem 1rem;
+  z-index: 10;
+  background: rgba(0,0,0,0.8);
+  box-shadow: 0 0 15px #ff4500;
+  animation: ${slam} 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  pointer-events: none;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    top: -15px;
   }
 `;
 
@@ -235,10 +274,39 @@ const VS = styled.div`
     font-size: 3rem;
     margin: 0.5rem 0;
     -webkit-text-stroke: 1px rgba(255,255,255,0.3);
-    
-    &::after {
-        transform: translate(2px, 2px);
-    }
+    &::after { transform: translate(2px, 2px); }
+  }
+`;
+
+// Ny komponent: Score Board
+const ScoreBoard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  .score {
+    font-size: 5rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255,255,255,0.3);
+    line-height: 1;
+  }
+
+  .divider {
+    font-size: 3rem;
+    color: #555;
+    font-weight: 900;
+  }
+
+  .winner-score {
+    color: #ff4500;
+    text-shadow: 0 0 30px rgba(255, 69, 0, 0.6);
+    transform: scale(1.1);
+  }
+
+  @media (max-width: 768px) {
+    .score { font-size: 4rem; }
+    .divider { font-size: 2rem; }
   }
 `;
 
@@ -269,6 +337,7 @@ const ButtonStyles = css`
   position: relative;
   overflow: hidden;
   text-align: center;
+  cursor: pointer;
 
   /* Shine effect */
   &::before {
@@ -294,16 +363,11 @@ const ButtonStyles = css`
   }
 
   @media (max-width: 768px) {
-    width: 100%; /* Full bredde på mobil */
+    width: 100%; 
     padding: 1rem;
     font-size: 1rem;
-    
-    /* Behold skew for stil, men mindre padding */
     transform: skew(-10deg);
-    
-    &:hover {
-        transform: skew(-10deg) translateY(-2px);
-    }
+    &:hover { transform: skew(-10deg) translateY(-2px); }
   }
 `;
 
@@ -323,7 +387,8 @@ const LiveBtn = styled.a`
   background: transparent;
   color: #ff4500;
   border: 2px solid #ff4500;
-  animation: ${pulse} 2s infinite;
+  /* Pulsing animation only if live */
+  animation: ${props => props.$isFinished ? 'none' : css`${pulse} 2s infinite`};
 
   &:hover {
     background: rgba(255, 69, 0, 0.1);
@@ -331,7 +396,7 @@ const LiveBtn = styled.a`
   }
 `;
 
-// --- Man of the Match ---
+// --- Man of the Match (Eksisterende) ---
 const MotmSection = styled.section`
   padding: 4rem 2rem;
   position: relative;
@@ -362,7 +427,6 @@ const PlayerCard = styled.div`
   background: #111;
   border: 1px solid #333;
   position: relative;
-  /* Skrå kutt i hjørnene */
   clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
   transition: transform 0.3s ease;
 
@@ -394,7 +458,7 @@ const CardImage = styled.div`
   }
   
   @media (max-width: 768px) {
-    height: 350px; /* Litt mindre på mobil */
+    height: 350px; 
   }
 `;
 
@@ -415,7 +479,6 @@ const CardBadge = styled.div`
   font-weight: 900;
   text-transform: uppercase;
   font-size: 0.8rem;
-  /* Action shape på badge også */
   clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
 `;
 
@@ -508,7 +571,7 @@ const StatsBar = styled.div`
   transform: skewY(-2deg);
   
   @media (max-width: 768px) {
-    transform: skewY(0); /* Fjern skew på mobil for bedre lesbarhet */
+    transform: skewY(0); 
     padding: 2.5rem 1rem;
   }
 `;
@@ -524,7 +587,7 @@ const StatsContent = styled.div`
 
   @media (max-width: 768px) {
     transform: skewY(0);
-    gap: 2.5rem; /* Mer luft mellom tallene på mobil */
+    gap: 2.5rem; 
   }
 
   div { text-align: center; }
@@ -536,12 +599,18 @@ function HomePage() {
   const { motm, matchData } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   
+  // HER styrer vi om kampen er ferdig og resultatet
   const currentMatch = {
     homeTeam: 'Asker',
     awayTeam: 'HSIL', 
     homeLogo: '/images/standard_832px-Asker_SK_logo.svg.png',
     awayLogo: '/images/HSIL logo desktop.png',
     liveLink: 'https://example.com/live',
+    
+    // Kampstatus logikk (sett dette til true når vi har vunnet)
+    isFinished: true, 
+    score: { home: 5, away: 2 },
+    
     ...matchData 
   };
   
@@ -561,14 +630,32 @@ function HomePage() {
           </Subtitle>
           
           <FightCard>
-            <TeamBlock>
+            {/* Hjemmelag */}
+            <TeamBlock $isWinner={currentMatch.isFinished && currentMatch.score.home > currentMatch.score.away}>
+              {currentMatch.isFinished && currentMatch.score.home > currentMatch.score.away && (
+                 <WinnerStamp>SEIER</WinnerStamp>
+              )}
               <img src={currentMatch.homeLogo} alt="Home" />
               <span>{currentMatch.homeTeam}</span>
             </TeamBlock>
             
-            <VS>VS</VS>
+            {/* Logic: Vis VS hvis kamp ikke startet, vis SCORE hvis ferdig */}
+            {currentMatch.isFinished ? (
+              <ScoreBoard>
+                <span className={`score ${currentMatch.score.home > currentMatch.score.away ? 'winner-score' : ''}`}>
+                  {currentMatch.score.home}
+                </span>
+                <span className="divider">-</span>
+                <span className={`score ${currentMatch.score.away > currentMatch.score.home ? 'winner-score' : ''}`}>
+                  {currentMatch.score.away}
+                </span>
+              </ScoreBoard>
+            ) : (
+              <VS>VS</VS>
+            )}
             
-            <TeamBlock>
+            {/* Bortelag */}
+            <TeamBlock $isLoser={currentMatch.isFinished && currentMatch.score.away < currentMatch.score.home}>
               <img src={currentMatch.awayLogo} alt="Away" />
               <span>{currentMatch.awayTeam}</span>
             </TeamBlock>
@@ -578,8 +665,13 @@ function HomePage() {
             <PrimaryBtn to="/matches">
               <span>Se Terminliste</span>
             </PrimaryBtn>
-            <LiveBtn href={currentMatch.liveLink} target="_blank">
-              <span>🔴 Se Kampen Live</span>
+            {/* Endre knappetekst basert på om kampen er over */}
+            <LiveBtn 
+              href={currentMatch.liveLink} 
+              target="_blank" 
+              $isFinished={currentMatch.isFinished}
+            >
+              <span>{currentMatch.isFinished ? '📄 Se Kamprapport' : '🔴 Se Kampen Live'}</span>
             </LiveBtn>
           </ActionButtons>
 
@@ -619,8 +711,9 @@ function HomePage() {
       <StatsBar>
         <StatsContent>
           <div>
-            <span className="num">100%</span>
-            <span className="lbl">Fight</span>
+            {/* Vis "3 Poeng" hvis vi vant */}
+            <span className="num">{currentMatch.isFinished ? '3 POENG' : '100%'}</span>
+            <span className="lbl">{currentMatch.isFinished ? 'Resultat' : 'Fight'}</span>
           </div>
           <div>
             <span className="num">#1</span>

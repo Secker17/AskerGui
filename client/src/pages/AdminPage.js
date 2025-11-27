@@ -13,7 +13,6 @@ const AdminWrapper = styled.div`
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Samme grid-bakgrunn som hovedsiden */
   background-image: 
     linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
@@ -140,13 +139,12 @@ const Header = styled.header`
 const Card = styled.div`
   background: #0f0f0f;
   border: 1px solid #222;
-  border-radius: 4px; /* Sharper corners for action feel */
+  border-radius: 4px;
   padding: 2rem;
   margin-bottom: 2rem;
   position: relative;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 
-  /* Orange accent top */
   &::before {
     content: '';
     position: absolute;
@@ -226,7 +224,7 @@ const Button = styled.button`
   letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.2s;
-  transform: skew(-10deg); /* Action style buttons */
+  transform: skew(-10deg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -234,7 +232,6 @@ const Button = styled.button`
   min-width: 120px;
   opacity: ${props => props.disabled ? 0.6 : 1};
 
-  /* Unskew text inside */
   span { transform: skew(10deg); }
 
   &:hover:not(:disabled) {
@@ -259,7 +256,6 @@ const ItemCard = styled.div`
   border: 1px solid #222;
   position: relative;
   transition: transform 0.2s;
-  /* Slight skew for cards too */
   transform: skew(-2deg); 
 
   &:hover {
@@ -281,7 +277,7 @@ const ItemCard = styled.div`
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: skew(2deg); /* Counter skew */
+      transform: skew(2deg);
     }
     
     .placeholder {
@@ -292,7 +288,7 @@ const ItemCard = styled.div`
 
   .content {
     padding: 1.2rem;
-    transform: skew(2deg); /* Counter skew text */
+    transform: skew(2deg);
   }
 
   h4 { 
@@ -392,6 +388,64 @@ const ListRow = styled.div`
   .actions { display: flex; gap: 0.5rem; }
 `;
 
+// Ny style for score input
+const ScoreInputWrapper = styled.div`
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: #1a1a1a;
+  border: 1px solid ${props => props.$finished ? '#ff4500' : '#333'};
+  border-radius: 4px;
+`;
+
+const ToggleContainer = styled.label`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  .switch {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background: #333;
+    border-radius: 30px;
+    transition: 0.3s;
+  }
+
+  input { display: none; }
+
+  input:checked + .switch {
+    background: #ff4500;
+  }
+
+  .switch::before {
+    content: '';
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    left: 4px;
+    bottom: 4px;
+    background: white;
+    transition: 0.3s;
+  }
+
+  input:checked + .switch::before {
+    transform: translateX(30px);
+  }
+
+  span {
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 1rem;
+    color: ${props => props.$active ? '#ff4500' : '#888'};
+  }
+`;
+
 function AdminPage() {
   const navigate = useNavigate();
   const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData, matchData, updateMatchData } = useContext(DataContext);
@@ -403,7 +457,7 @@ function AdminPage() {
   const [motmForm, setMotmForm] = useState(motm);
   const [editingMatch, setEditingMatch] = useState(null);
   const [editingCase, setEditingCase] = useState(null);
-  const [editingPlayer, setEditingPlayer] = useState(null); // Ny state for redigering av spiller
+  const [editingPlayer, setEditingPlayer] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Match Data Form
@@ -451,6 +505,16 @@ function AdminPage() {
     updateMatchData({ ...matchData, [field]: value });
   };
 
+  // Håndter oppdatering av resultat (Score)
+  const handleScoreUpdate = (team, value) => {
+    // Hvis score objektet ikke finnes, lag et nytt, ellers kopier det
+    const currentScore = matchData.score || { home: 0, away: 0 };
+    const newScore = { ...currentScore, [team]: Number(value) };
+    
+    // Oppdater matchData med det nye score objektet
+    updateMatchData({ ...matchData, score: newScore });
+  };
+
   // Player Handlers
   const handleEditPlayer = (player) => {
     setEditingPlayer(player);
@@ -478,13 +542,10 @@ function AdminPage() {
         name: playerForm.name,
         number: playerForm.number,
         position: playerForm.position,
-        image: playerForm.imagePreview || playerForm.image || '🦁' // Bruk eksisterende eller placeholder
+        image: playerForm.imagePreview || playerForm.image || '🦁'
       };
 
       if (editingPlayer) {
-        // Logikken for oppdatering: Slett gammel ID, legg til ny (eller oppdater hvis context støtter det)
-        // Her antar vi at addPlayer genererer ny ID, men vi vil beholde dataene.
-        // For enkelhets skyld i denne demoen: Slett gammel, legg til oppdatert.
         await deletePlayer(editingPlayer.id);
         await addPlayer(playerData);
         setEditingPlayer(null);
@@ -592,7 +653,7 @@ function AdminPage() {
           <Button danger onClick={async () => {
              if(window.confirm('SLETT ALT? Dette kan ikke angres.')) await clearAllData();
           }} style={{ width: '100%', fontSize: '0.8rem' }}>
-             <span>🗑️ Reset Database</span>
+              <span>🗑️ Reset Database</span>
           </Button>
         </div>
       </Sidebar>
@@ -629,43 +690,84 @@ function AdminPage() {
             </Card>
 
             <Card>
-              <CardTitle>Logoer</CardTitle>
-              <FormGroup>
-                <Label>Hjemmelag Logo</Label>
-                <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
-                    <div style={{flex: 1}}>
-                         <Input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('homeLogo', val), 'previewOnly')} 
-                         />
-                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
-                         <Input value={matchData.homeLogo} onChange={e => handleUpdateMatchData('homeLogo', e.target.value)} placeholder="URL..." />
-                    </div>
-                    <PreviewBox>
-                        {matchData.homeLogo ? <img src={matchData.homeLogo} alt="Home" /> : <span>Ingen</span>}
-                    </PreviewBox>
-                </div>
-              </FormGroup>
+              <CardTitle>Resultat & Status</CardTitle>
+              
+              <ToggleContainer $active={matchData.isFinished}>
+                <input 
+                  type="checkbox" 
+                  checked={matchData.isFinished || false} 
+                  onChange={(e) => handleUpdateMatchData('isFinished', e.target.checked)} 
+                />
+                <div className="switch"></div>
+                <span>{matchData.isFinished ? 'Kampen er ferdig (Vis Resultat)' : 'Kampen pågår / Kommende'}</span>
+              </ToggleContainer>
 
-              <FormGroup>
-                <Label>Bortelag Logo</Label>
-                <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
-                    <div style={{flex: 1}}>
-                         <Input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('awayLogo', val), 'previewOnly')} 
-                         />
-                         <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
-                         <Input value={matchData.awayLogo} onChange={e => handleUpdateMatchData('awayLogo', e.target.value)} placeholder="URL..." />
-                    </div>
-                    <PreviewBox>
-                        {matchData.awayLogo ? <img src={matchData.awayLogo} alt="Away" /> : <span>Ingen</span>}
-                    </PreviewBox>
-                </div>
-              </FormGroup>
-              <Button onClick={() => alert('Dagens kamp er oppdatert automatisk i context!')}><span>Bekreft Endringer</span></Button>
+              <ScoreInputWrapper $finished={matchData.isFinished}>
+                  <FormGroup style={{marginBottom:0, flex:1, textAlign:'center'}}>
+                      <Label style={{fontSize:'1rem', color: '#fff'}}>{matchData.homeTeam || 'Hjemme'}</Label>
+                      <Input 
+                        type="number" 
+                        style={{fontSize: '2rem', textAlign:'center', height:'80px', fontWeight:'bold', color:'#ff4500'}}
+                        value={matchData.score?.home ?? 0}
+                        onChange={(e) => handleScoreUpdate('home', e.target.value)}
+                      />
+                  </FormGroup>
+                  <span style={{fontSize:'2rem', fontWeight:'900', color:'#444'}}>-</span>
+                  <FormGroup style={{marginBottom:0, flex:1, textAlign:'center'}}>
+                      <Label style={{fontSize:'1rem', color: '#fff'}}>{matchData.awayTeam || 'Borte'}</Label>
+                      <Input 
+                        type="number" 
+                        style={{fontSize: '2rem', textAlign:'center', height:'80px', fontWeight:'bold', color:'#fff'}}
+                        value={matchData.score?.away ?? 0}
+                        onChange={(e) => handleScoreUpdate('away', e.target.value)}
+                      />
+                  </FormGroup>
+              </ScoreInputWrapper>
+              
+              <p style={{marginTop: '1rem', color: '#666', fontSize: '0.8rem'}}>
+                  * Vinneren markeres automatisk basert på scoren. Ved seier vises "3 Poeng" på forsiden.
+              </p>
+            </Card>
+
+            <Card style={{gridColumn: '1 / -1'}}>
+              <CardTitle>Logoer</CardTitle>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <FormGroup>
+                  <Label>Hjemmelag Logo</Label>
+                  <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
+                      <div style={{flex: 1}}>
+                           <Input 
+                             type="file" 
+                             accept="image/*" 
+                             onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('homeLogo', val), 'previewOnly')} 
+                           />
+                           <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
+                           <Input value={matchData.homeLogo} onChange={e => handleUpdateMatchData('homeLogo', e.target.value)} placeholder="URL..." />
+                      </div>
+                      <PreviewBox>
+                          {matchData.homeLogo ? <img src={matchData.homeLogo} alt="Home" /> : <span>Ingen</span>}
+                      </PreviewBox>
+                  </div>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Bortelag Logo</Label>
+                  <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
+                      <div style={{flex: 1}}>
+                           <Input 
+                             type="file" 
+                             accept="image/*" 
+                             onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('awayLogo', val), 'previewOnly')} 
+                           />
+                           <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
+                           <Input value={matchData.awayLogo} onChange={e => handleUpdateMatchData('awayLogo', e.target.value)} placeholder="URL..." />
+                      </div>
+                      <PreviewBox>
+                          {matchData.awayLogo ? <img src={matchData.awayLogo} alt="Away" /> : <span>Ingen</span>}
+                      </PreviewBox>
+                  </div>
+                </FormGroup>
+              </div>
             </Card>
           </div>
         )}
@@ -704,7 +806,7 @@ function AdminPage() {
               
               <div style={{display:'flex', gap:'1rem'}}>
                   <Button onClick={handleSavePlayer} disabled={loading}>
-                     <span>{loading ? 'Lagrer...' : (editingPlayer ? 'Oppdater Spiller' : 'Legg til Spiller')}</span>
+                      <span>{loading ? 'Lagrer...' : (editingPlayer ? 'Oppdater Spiller' : 'Legg til Spiller')}</span>
                   </Button>
                   {editingPlayer && (
                       <Button danger onClick={handleCancelEditPlayer}><span>Avbryt</span></Button>
@@ -736,18 +838,18 @@ function AdminPage() {
         {/* --- TAB: MOTM --- */}
         {activeTab === 'motm' && (
           <Card>
-             <CardTitle>Oppdater MOTM Kortet</CardTitle>
-             <FormGroup>
-               <Label>Velg fra liste (Fyller ut automatisk)</Label>
-               <Select onChange={(e) => {
+              <CardTitle>Oppdater MOTM Kortet</CardTitle>
+              <FormGroup>
+                <Label>Velg fra liste (Fyller ut automatisk)</Label>
+                <Select onChange={(e) => {
                   const p = players.find(pl => pl.name === e.target.value);
                   if(p) setMotmForm({...motmForm, player: p.name, number: p.number, position: p.position});
-               }}>
+                }}>
                   <option>Velg spiller...</option>
                   {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-               </Select>
-             </FormGroup>
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                </Select>
+              </FormGroup>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <FormGroup>
                     <Label>Navn</Label>
                     <Input value={motmForm.player} onChange={e => setMotmForm({...motmForm, player: e.target.value})} />
