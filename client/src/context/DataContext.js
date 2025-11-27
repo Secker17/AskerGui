@@ -19,11 +19,20 @@ const defaultCases = [];
 
 const defaultPlayers = [];
 
+const defaultMatchData = {
+  homeTeam: 'Asker',
+  awayTeam: 'HSIL',
+  homeLogo: '/images/standard_832px-Asker_SK_logo.svg.png',
+  awayLogo: '/images/HSIL logo desktop.png',
+  liveLink: ''
+};
+
 export function DataProvider({ children }) {
   const [motm, setMotm] = useState(defaultMotm);
   const [matches, setMatches] = useState(defaultMatches);
   const [cases, setCases] = useState(defaultCases);
   const [players, setPlayers] = useState(defaultPlayers);
+  const [matchData, setMatchData] = useState(defaultMatchData);
 
   // Firebase listeners
   useEffect(() => {
@@ -74,12 +83,24 @@ export function DataProvider({ children }) {
       }
     });
 
+    // Listen to MatchData
+    const matchDataRef = ref(database, 'matchData');
+    const unsubscribeMatchData = onValue(matchDataRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setMatchData(data);
+      } else {
+        setMatchData(defaultMatchData);
+      }
+    });
+
     // Cleanup listeners
     return () => {
       unsubscribeMotm();
       unsubscribeMatches();
       unsubscribeCases();
       unsubscribePlayers();
+      unsubscribeMatchData();
     };
   }, []);
 
@@ -187,6 +208,17 @@ export function DataProvider({ children }) {
     }
   };
 
+  const updateMatchData = async (newMatchData) => {
+    try {
+      setMatchData(newMatchData);
+      await set(ref(database, 'matchData'), newMatchData);
+      return true;
+    } catch (error) {
+      console.error('Error updating match data:', error);
+      throw error;
+    }
+  };
+
   const clearAllData = async () => {
     try {
       await remove(ref(database, 'matches'));
@@ -205,7 +237,8 @@ export function DataProvider({ children }) {
       matches, addMatch, deleteMatch, updateMatch,
       cases, addCase, deleteCase, updateCase,
       players, addPlayer, deletePlayer, updatePlayer,
-      clearAllData,
+      matchData, updateMatchData,
+      clearAllData
     }}>
       {children}
     </DataContext.Provider>

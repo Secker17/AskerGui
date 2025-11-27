@@ -310,6 +310,75 @@ const Title = styled.h1`
   }
 `;
 
+const TeamLogo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    
+    @media (max-width: 768px) {
+      width: 50px;
+      height: 50px;
+    }
+  }
+`;
+
+const TeamName = styled.span`
+  font-size: 4rem;
+  font-weight: 900;
+  text-shadow: 
+    0 0 30px rgba(255, 0, 0, 0.9),
+    0 0 60px rgba(255, 50, 0, 0.7),
+    0 0 90px rgba(255, 0, 0, 0.5),
+    3px 3px 10px rgba(0, 0, 0, 0.9);
+  color: #fff;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 0 1rem;
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+    margin: 0 0.5rem;
+  }
+`;
+
+const VS = styled.span`
+  font-size: 3rem;
+  font-weight: 900;
+  color: #ff6400;
+  text-shadow: 
+    0 0 15px rgba(255, 100, 0, 0.8),
+    0 0 30px rgba(255, 50, 0, 0.6);
+  margin: 0 1rem;
+  letter-spacing: 2px;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+    margin: 0 0.5rem;
+  }
+`;
+
+const OpponentLogo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    
+    @media (max-width: 768px) {
+      width: 50px;
+      height: 50px;
+    }
+  }
+`;
+
 const Subtitle = styled.p`
   font-size: 1.4rem;
   margin: 0;
@@ -333,6 +402,69 @@ const CTAButtons = styled.div`
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 1rem;
+`;
+
+const MatchDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2rem;
+  
+  @media (max-width: 768px) {
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+`;
+
+const LiveButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2rem;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(255, 0, 0, 0.5),
+    0 8px 20px rgba(0, 0, 0, 0.3);
+  animation: livePulse 2s ease-in-out infinite;
+  
+  @keyframes livePulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 
+        0 0 20px rgba(255, 0, 0, 0.5),
+        0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 
+        0 0 30px rgba(255, 0, 0, 0.8),
+        0 12px 25px rgba(0, 0, 0, 0.4);
+    }
+  }
+  
+  &:hover {
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 
+      0 0 40px rgba(255, 0, 0, 0.9),
+      0 15px 30px rgba(0, 0, 0, 0.5);
+    filter: brightness(1.2);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    margin-top: 1.5rem;
+  }
 `;
 
 const CTAButton = styled(Link)`
@@ -500,9 +632,24 @@ const StatCard = styled.div`
 `;
 
 function HomePage() {
-  const { motm } = useContext(DataContext);
-  const logo = '/images/standard_832px-Asker_SK_logo.svg.png';
-
+  const { motm, matchData } = useContext(DataContext);
+  const [logo, setLogo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
+  
+  // Debug logging
+  console.log('matchData:', matchData);
+  
+  // Always use currentMatch with fallback
+  const currentMatch = {
+    homeTeam: 'Asker',
+    awayTeam: 'HSIL', 
+    homeLogo: '/images/standard_832px-Asker_SK_logo.svg.png',
+    awayLogo: '/images/HSIL logo desktop.png',
+    liveLink: 'https://example.com/live', // Test med midlertidig link
+    ...matchData // Override with Firebase data if available
+  };
+  
+  console.log('currentMatch:', currentMatch);
+  console.log('currentMatch.liveLink:', currentMatch.liveLink);
 
   return (
     <Container>
@@ -522,6 +669,18 @@ function HomePage() {
               Kommende Kamper
             </CTAButton>
           </CTAButtons>
+          <MatchDisplay>
+            <TeamLogo>
+              <img src={currentMatch.homeLogo} alt={currentMatch.homeTeam} />
+            </TeamLogo>
+            <VS>VS</VS>
+            <OpponentLogo>
+              <img src={currentMatch.awayLogo} alt={currentMatch.awayTeam} />
+            </OpponentLogo>
+          </MatchDisplay>
+          <LiveButton href={currentMatch.liveLink || 'https://example.com/live'} target="_blank" rel="noopener noreferrer">
+            🔴 Se Live
+          </LiveButton>
         </HeroContent>
       </Hero>
 

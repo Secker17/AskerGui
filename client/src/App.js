@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import HomePage from './pages/HomePage';
 import UpcomingMatchesPage from './pages/UpcomingMatchesPage';
 import AdminPage from './pages/AdminPage';
+import AdminPinPage from './pages/AdminPinPage';
 import { DataProvider } from './context/DataContext';
 import './App.css';
 
@@ -195,6 +196,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/matches" element={<UpcomingMatchesPage />} />
+          <Route path="/admin-pin" element={<AdminPinPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
 

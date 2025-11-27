@@ -1,6 +1,7 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { DataContext } from '../context/DataContext';
+import { useNavigate } from 'react-router-dom';
 
 const Wrapper = styled.div`
   display: grid;
@@ -478,7 +479,8 @@ const PlayerCard = styled.div`
 
 function AdminPage() {
   // Alle React Hooks må kalles først
-  const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData } = useContext(DataContext);
+  const navigate = useNavigate();
+  const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData, matchData, updateMatchData } = useContext(DataContext);
   const [activeTab, setActiveTab] = useState('players');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [motmForm, setMotmForm] = useState(motm);
@@ -506,9 +508,17 @@ function AdminPage() {
   });
   const [motmImagePreview, setMotmImagePreview] = useState(null);
   const [uploadingPlayer, setUploadingPlayer] = useState(false);
-
+  
   // Sjekk om bruker er på PC/desktop
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+  
+  // Sjekk PIN-kode autentisering
+  useEffect(() => {
+    const isAuthenticated = sessionStorage.getItem('adminAuthenticated');
+    if (!isAuthenticated) {
+      navigate('/admin-pin');
+    }
+  }, [navigate]);
   
   if (isMobile) {
     return (
@@ -765,6 +775,7 @@ function AdminPage() {
         <SidebarButton active={activeTab === 'players'} onClick={() => selectTab('players')}>👥 Spillere</SidebarButton>
         <SidebarButton active={activeTab === 'motm'} onClick={() => selectTab('motm')}>⭐ Man of the Match</SidebarButton>
         <SidebarButton active={activeTab === 'matches'} onClick={() => selectTab('matches')}>📅 Kamper</SidebarButton>
+        <SidebarButton active={activeTab === 'matchData'} onClick={() => selectTab('matchData')}>⚔️ Dagens Kamp</SidebarButton>
         <SidebarButton active={activeTab === 'cases'} onClick={() => selectTab('cases')}>⚖️ Rettsaker</SidebarButton>
 
         <SidebarTitle style={{ marginTop: '2rem' }}>Lister</SidebarTitle>
@@ -1052,6 +1063,62 @@ function AdminPage() {
             ))}
           </List>
         </Section>
+        )}
+
+        {activeTab === 'matchData' && (
+      <Grid>
+        <Section>
+          <SectionTitle>Dagens Kamp</SectionTitle>
+          <FormGroup>
+            <Label>Hjemmelag</Label>
+            <Input
+              type="text"
+              value={matchData.homeTeam}
+              onChange={(e) => updateMatchData({ ...matchData, homeTeam: e.target.value })}
+              placeholder="Asker"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Bortelag</Label>
+            <Input
+              type="text"
+              value={matchData.awayTeam}
+              onChange={(e) => updateMatchData({ ...matchData, awayTeam: e.target.value })}
+              placeholder="Motstander"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Hjemmelag Logo</Label>
+            <Input
+              type="text"
+              value={matchData.homeLogo}
+              onChange={(e) => updateMatchData({ ...matchData, homeLogo: e.target.value })}
+              placeholder="/images/logo.png"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Bortelag Logo</Label>
+            <Input
+              type="text"
+              value={matchData.awayLogo}
+              onChange={(e) => updateMatchData({ ...matchData, awayLogo: e.target.value })}
+              placeholder="/images/opponent.png"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Live Link</Label>
+            <Input
+              type="text"
+              value={matchData.liveLink}
+              onChange={(e) => updateMatchData({ ...matchData, liveLink: e.target.value })}
+              placeholder="https://example.com/live"
+            />
+          </FormGroup>
+          <Button onClick={() => alert('Dagens kamp oppdatert!')}>
+            Lagre Dagens Kamp
+          </Button>
+        </Section>
+      </Grid>
         )}
 
         {activeTab === 'cases' && (
