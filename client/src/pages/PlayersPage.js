@@ -179,6 +179,46 @@ const BigNumber = styled.div`
   transition: all 0.4s ease;
 `;
 
+// --- NYE BADGES ---
+const CaptainBadge = styled.div`
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  width: 40px;
+  height: 40px;
+  background: #ff4500;
+  color: #000;
+  font-weight: 900;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  transform: skew(5deg); /* Counter skew to match context */
+  z-index: 10;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+
+  &::after {
+    content: 'C';
+  }
+`;
+
+const LeaderBadge = styled.div`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #fff;
+  color: #000;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transform: skew(5deg);
+  z-index: 10;
+  border-left: 4px solid #ff4500;
+`;
+
 const PlayerCard = styled.div`
   background: #121212;
   height: 400px;
@@ -245,6 +285,10 @@ const PlayerCard = styled.div`
       transform: skew(5deg) translateY(-5px);
     }
 
+    ${CaptainBadge}, ${LeaderBadge} {
+        transform: skew(5deg) scale(1.1);
+    }
+
     &::after {
       transform: scaleX(1);
     }
@@ -262,6 +306,7 @@ const PlayerCard = styled.div`
     }
 
     ${CardContent} { transform: skew(0); }
+    ${CaptainBadge}, ${LeaderBadge} { transform: skew(0); }
     
     &:hover {
       transform: translateY(-5px);
@@ -347,6 +392,12 @@ function PlayersPage() {
         <Grid>
           {sortedPlayers.map((player, index) => (
             <PlayerCard key={player.id} index={index}>
+              {/* Viser Kaptein Badge hvis isCaptain er true */}
+              {player.isCaptain && <CaptainBadge title="Kaptein" />}
+              
+              {/* Viser Lagleder Badge hvis isTeamLeader er true */}
+              {player.isTeamLeader && <LeaderBadge>LAGLEDER</LeaderBadge>}
+
               <div className="img-wrapper">
                 {player.image && (player.image.startsWith('data:') || player.image.startsWith('http')) ? (
                   <img src={player.image} alt={player.name} loading="lazy" />

@@ -470,9 +470,15 @@ function AdminPage() {
     player: '', reason: '', fine: '', likelihood: 0.5, round: ''
   });
 
-  // Player Form
+  // Player Form - NÅ MED ROLLENE KAPTEIN OG LAGLEDER
   const [playerForm, setPlayerForm] = useState({
-    name: '', number: '', position: '', imagePreview: null, image: ''
+    name: '', 
+    number: '', 
+    position: '', 
+    imagePreview: null, 
+    image: '',
+    isCaptain: false,
+    isTeamLeader: false
   });
 
   // Mobile Check
@@ -507,11 +513,8 @@ function AdminPage() {
 
   // Håndter oppdatering av resultat (Score)
   const handleScoreUpdate = (team, value) => {
-    // Hvis score objektet ikke finnes, lag et nytt, ellers kopier det
     const currentScore = matchData.score || { home: 0, away: 0 };
     const newScore = { ...currentScore, [team]: Number(value) };
-    
-    // Oppdater matchData med det nye score objektet
     updateMatchData({ ...matchData, score: newScore });
   };
 
@@ -523,14 +526,16 @@ function AdminPage() {
       number: player.number,
       position: player.position,
       image: player.image,
-      imagePreview: player.image 
+      imagePreview: player.image,
+      isCaptain: player.isCaptain || false, // Hent status
+      isTeamLeader: player.isTeamLeader || false // Hent status
     });
     window.scrollTo(0,0);
   };
 
   const handleCancelEditPlayer = () => {
     setEditingPlayer(null);
-    setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '' });
+    setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false });
   };
 
   const handleSavePlayer = async () => {
@@ -542,7 +547,9 @@ function AdminPage() {
         name: playerForm.name,
         number: playerForm.number,
         position: playerForm.position,
-        image: playerForm.imagePreview || playerForm.image || '🦁'
+        image: playerForm.imagePreview || playerForm.image || '🦁',
+        isCaptain: playerForm.isCaptain, // Lagre status
+        isTeamLeader: playerForm.isTeamLeader // Lagre status
       };
 
       if (editingPlayer) {
@@ -555,7 +562,7 @@ function AdminPage() {
         alert('Spiller lagt til!');
       }
       
-      setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '' });
+      setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false });
       
     } catch (e) { alert(e.message); }
     setLoading(false);
@@ -791,6 +798,30 @@ function AdminPage() {
                     <Input value={playerForm.position} onChange={e => setPlayerForm({...playerForm, position: e.target.value})} placeholder="Posisjon..." />
                 </FormGroup>
               </div>
+              
+              {/* ROLLER SEKSJON */}
+              <div style={{display: 'flex', gap: '2rem', marginBottom: '1.5rem'}}>
+                <ToggleContainer $active={playerForm.isCaptain}>
+                  <input 
+                    type="checkbox" 
+                    checked={playerForm.isCaptain} 
+                    onChange={(e) => setPlayerForm({...playerForm, isCaptain: e.target.checked})} 
+                  />
+                  <div className="switch"></div>
+                  <span>Kaptein ©</span>
+                </ToggleContainer>
+
+                <ToggleContainer $active={playerForm.isTeamLeader}>
+                  <input 
+                    type="checkbox" 
+                    checked={playerForm.isTeamLeader} 
+                    onChange={(e) => setPlayerForm({...playerForm, isTeamLeader: e.target.checked})} 
+                  />
+                  <div className="switch"></div>
+                  <span>Lagleder</span>
+                </ToggleContainer>
+              </div>
+
               <FormGroup>
                  <Label>Spillerbilde</Label>
                  <UploadBox>
@@ -824,6 +855,13 @@ function AdminPage() {
                   <div className="content">
                     <h4>{p.name}</h4>
                     <p>#{p.number} • {p.position}</p>
+                    
+                    {/* VISER STATUS PÅ ADMIN KORTET OGSÅ */}
+                    <div style={{marginBottom:'1rem', display:'flex', gap:'0.5rem'}}>
+                        {p.isCaptain && <span style={{fontSize:'0.7rem', background:'#ff4500', padding:'2px 6px', color:'black', fontWeight:'bold'}}>KAPTEIN</span>}
+                        {p.isTeamLeader && <span style={{fontSize:'0.7rem', background:'#fff', padding:'2px 6px', color:'black', fontWeight:'bold'}}>LAGLEDER</span>}
+                    </div>
+
                     <div className="actions">
                         <SmallBtn onClick={() => handleEditPlayer(p)}><span>Rediger</span></SmallBtn>
                         <SmallBtn danger onClick={() => deletePlayer(p.id)}><span>Slett</span></SmallBtn>
@@ -874,9 +912,9 @@ function AdminPage() {
                     <span>📸 Last opp nytt bilde</span>
                 </UploadBox>
                 {motmForm.image && motmForm.image.length > 20 && (
-                     <PreviewBox>
-                        <img src={motmForm.image} alt="Preview" />
-                     </PreviewBox>
+                      <PreviewBox>
+                         <img src={motmForm.image} alt="Preview" />
+                      </PreviewBox>
                 )}
              </FormGroup>
              <Button onClick={handleSaveMotm}><span>Publiser MOTM</span></Button>
