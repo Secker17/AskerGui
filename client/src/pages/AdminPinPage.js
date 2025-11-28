@@ -57,7 +57,7 @@ const Card = styled.div`
   flex-direction: column;
   align-items: center;
 
-  ${props => props.$shake && css` /* Endret til $shake */
+  ${props => props.$shake && css`
     animation: ${shake} 0.4s cubic-bezier(.36,.07,.19,.97) both;
     border-color: #ff4444;
     box-shadow: 0 0 30px rgba(255, 68, 68, 0.2);
@@ -96,7 +96,7 @@ const Status = styled.div`
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
   height: 20px;
-  color: ${props => props.$error ? '#ff4444' : '#ff4500'}; /* Endret til $error */
+  color: ${props => props.$error ? '#ff4444' : '#ff4500'};
   text-transform: uppercase;
   margin-bottom: 2rem;
   font-weight: 600;
@@ -118,7 +118,6 @@ const PinDot = styled.div`
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   background: transparent;
 
-  /* HER VAR FEILEN: Endret 'filled' til '$filled' */
   ${props => props.$filled && css`
     background: #ff4500;
     border-color: #ff4500;
@@ -196,12 +195,13 @@ function AdminPinPage() {
   const [statusText, setStatusText] = useState('Skriv inn adgangskode');
   const navigate = useNavigate();
 
-  // Hent PIN fra .env eller bruk fallback
-  const CORRECT_PIN = process.env.REACT_APP_ADMIN_PIN || '188181';
+  // --- HER ER ENDRINGEN ---
+  // Vi leser kun fra miljøvariabelen. Ingen fallback.
+  const CORRECT_PIN = process.env.REACT_APP_ADMIN_PIN;
 
-  // Flyttet logikken inn i funksjonen for å kunne bruke den i useEffect
   const checkPin = useCallback((currentPin) => {
-    if (currentPin === CORRECT_PIN) {
+    // Sjekker at CORRECT_PIN eksisterer OG at den matcher
+    if (CORRECT_PIN && currentPin === CORRECT_PIN) {
       setStatusText('ACCESS GRANTED');
       sessionStorage.setItem('adminAuthenticated', 'true');
       setTimeout(() => navigate('/admin'), 200);
@@ -250,7 +250,6 @@ function AdminPinPage() {
 
   return (
     <Container>
-      {/* Endret props til $shake og $error */}
       <Card $shake={error}>
         <LockIcon>🔒</LockIcon>
         <Title>Admin Tilgang</Title>
@@ -258,7 +257,6 @@ function AdminPinPage() {
 
         <DotsContainer>
           {[...Array(6)].map((_, i) => (
-            /* Endret prop til $filled */
             <PinDot key={i} $filled={pin.length > i} />
           ))}
         </DotsContainer>
