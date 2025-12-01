@@ -14,7 +14,7 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: scale(1); }
 `;
 
-// --- STYLED COMPONENTS ---
+// --- STYLED COMPONENTS (Beholdt de samme, men lagt til LoadingState) ---
 
 const Container = styled.div`
   display: flex;
@@ -31,14 +31,6 @@ const Container = styled.div`
     linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at 50% 50%, transparent 20%, #000 100%);
-    pointer-events: none;
-  }
 `;
 
 const Card = styled.div`
@@ -96,12 +88,13 @@ const Status = styled.div`
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
   height: 20px;
-  color: ${props => props.$error ? '#ff4444' : '#ff4500'};
+  color: ${props => props.$error ? '#ff4444' : props.$success ? '#00ff88' : '#ff4500'};
   text-transform: uppercase;
   margin-bottom: 2rem;
   font-weight: 600;
   letter-spacing: 1px;
   text-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
+  opacity: ${props => props.$loading ? 0.7 : 1};
 `;
 
 const DotsContainer = styled.div`
@@ -124,6 +117,12 @@ const PinDot = styled.div`
     box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
     transform: scale(1.1);
   `}
+
+  ${props => props.$loading && css`
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+    animation: pulse 1s infinite;
+  `}
 `;
 
 const NumpadGrid = styled.div`
@@ -131,6 +130,9 @@ const NumpadGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 1.2rem;
   width: 100%;
+  pointer-events: ${props => props.$disabled ? 'none' : 'auto'};
+  opacity: ${props => props.$disabled ? 0.5 : 1};
+  transition: opacity 0.3s;
 `;
 
 const NumButton = styled.button`
@@ -192,52 +194,75 @@ const BackLink = styled.button`
 function AdminPinPage() {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [statusText, setStatusText] = useState('Skriv inn adgangskode');
   const navigate = useNavigate();
 
-  // --- HER ER ENDRINGEN ---
-  // Vi leser kun fra miljøvariabelen. Ingen fallback.
-  const CORRECT_PIN = process.env.REACT_APP_ADMIN_PIN;
+  const checkPin = useCallback(async (currentPin) => {
+    setLoading(true);
+    setStatusText('Verifiserer...');
 
-  const checkPin = useCallback((currentPin) => {
-    // Sjekker at CORRECT_PIN eksisterer OG at den matcher
-    if (CORRECT_PIN && currentPin === CORRECT_PIN) {
-      setStatusText('ACCESS GRANTED');
-      sessionStorage.setItem('adminAuthenticated', 'true');
-      setTimeout(() => navigate('/admin'), 200);
-    } else {
+    try {
+      // Kall Vercel Serverless Function
+      const response = await fetch('/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: currentPin }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSuccess(true);
+        setStatusText('ACCESS GRANTED');
+        // Vi setter også en fallback i session storage for frontend UI logikk,
+        // men den virkelige sikkerheten ligger nå i httpOnly cookien.
+        sessionStorage.setItem('adminAuthenticated', 'true');
+        
+        setTimeout(() => navigate('/admin'), 800);
+      } else {
+        throw new Error('Invalid PIN');
+      }
+    } catch (err) {
       setError(true);
       setStatusText('ACCESS DENIED');
+      setLoading(false);
+      
+      // Vibrer telefon hvis på mobil
+      if (navigator.vibrate) navigator.vibrate(200);
+
       setTimeout(() => {
         setPin('');
         setStatusText('Prøv igjen');
         setError(false);
-      }, 500);
+      }, 800);
     }
-  }, [CORRECT_PIN, navigate]);
+  }, [navigate]);
 
   const handlePress = useCallback((val) => {
+    if (loading || success) return; // Blokker input mens vi laster
+
     if (pin.length < 6) {
       const newPin = pin + val;
       setPin(newPin);
       setError(false);
-      setStatusText('Verifiserer...');
-
+      
       if (newPin.length === 6) {
-        setTimeout(() => {
-          checkPin(newPin);
-        }, 300);
+        // Vent bitte litt for visuell feedback på siste dot
+        setTimeout(() => checkPin(newPin), 100);
       }
     }
-  }, [pin, checkPin]);
+  }, [pin, checkPin, loading, success]);
 
   const handleDelete = useCallback(() => {
+    if (loading || success) return;
     if (pin.length > 0) {
       setPin(prev => prev.slice(0, -1));
       setError(false);
       setStatusText('Skriv inn adgangskode');
     }
-  }, [pin]);
+  }, [pin, loading, success]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -253,15 +278,21 @@ function AdminPinPage() {
       <Card $shake={error}>
         <LockIcon>🔒</LockIcon>
         <Title>Admin Tilgang</Title>
-        <Status $error={error}>{statusText}</Status>
+        <Status $error={error} $success={success} $loading={loading}>
+          {statusText}
+        </Status>
 
         <DotsContainer>
           {[...Array(6)].map((_, i) => (
-            <PinDot key={i} $filled={pin.length > i} />
+            <PinDot 
+              key={i} 
+              $filled={pin.length > i} 
+              $loading={loading && pin.length === 6}
+            />
           ))}
         </DotsContainer>
 
-        <NumpadGrid>
+        <NumpadGrid $disabled={loading || success}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
             <NumButton key={num} onClick={() => handlePress(num.toString())}>
               {num}
