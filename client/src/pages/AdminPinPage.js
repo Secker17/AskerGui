@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
-// --- ANIMS ---
+// --- ANIMASJONER ---
 const shake = keyframes`
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
@@ -14,7 +14,13 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: scale(1); }
 `;
 
-// --- STYLED COMPONENTS (Beholdt de samme, men lagt til LoadingState) ---
+const pulse = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+`;
+
+// --- STYLED COMPONENTS ---
 
 const Container = styled.div`
   display: flex;
@@ -31,6 +37,14 @@ const Container = styled.div`
     linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 20%, #000 100%);
+    pointer-events: none;
+  }
 `;
 
 const Card = styled.div`
@@ -95,6 +109,7 @@ const Status = styled.div`
   letter-spacing: 1px;
   text-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
   opacity: ${props => props.$loading ? 0.7 : 1};
+  transition: color 0.3s;
 `;
 
 const DotsContainer = styled.div`
@@ -121,7 +136,7 @@ const PinDot = styled.div`
   ${props => props.$loading && css`
     border-color: rgba(255, 255, 255, 0.5);
     background: rgba(255, 255, 255, 0.2);
-    animation: pulse 1s infinite;
+    animation: ${pulse} 1s infinite;
   `}
 `;
 
@@ -199,12 +214,28 @@ function AdminPinPage() {
   const [statusText, setStatusText] = useState('Skriv inn adgangskode');
   const navigate = useNavigate();
 
+  // --- NYTT: Sjekk om brukeren allerede er logget inn ---
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        const res = await fetch('/api/auth');
+        if (res.ok) {
+          // Hvis cookie er gyldig, gå rett til admin
+          navigate('/admin');
+        }
+      } catch (err) {
+        // Ikke gjør noe, vent på PIN
+      }
+    };
+    checkExistingAuth();
+  }, [navigate]);
+
   const checkPin = useCallback(async (currentPin) => {
     setLoading(true);
     setStatusText('Verifiserer...');
 
     try {
-      // Kall Vercel Serverless Function
+      // Kall Vercel Serverless Function (POST til api/verify)
       const response = await fetch('/api/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -216,8 +247,7 @@ function AdminPinPage() {
       if (response.ok && data.success) {
         setSuccess(true);
         setStatusText('ACCESS GRANTED');
-        // Vi setter også en fallback i session storage for frontend UI logikk,
-        // men den virkelige sikkerheten ligger nå i httpOnly cookien.
+        // Setter UI-flagg (men sikkerheten ligger i cookien)
         sessionStorage.setItem('adminAuthenticated', 'true');
         
         setTimeout(() => navigate('/admin'), 800);
@@ -249,7 +279,7 @@ function AdminPinPage() {
       setError(false);
       
       if (newPin.length === 6) {
-        // Vent bitte litt for visuell feedback på siste dot
+        // Vent bitte litt for visuell feedback på siste dot før vi sjekker
         setTimeout(() => checkPin(newPin), 100);
       }
     }

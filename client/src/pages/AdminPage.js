@@ -1,9 +1,14 @@
 import React, { useContext, useState, useEffect } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
 
 // --- Styled Components ---
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
 
 const AdminWrapper = styled.div`
   display: grid;
@@ -12,6 +17,7 @@ const AdminWrapper = styled.div`
   background-color: #050505;
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: ${fadeIn} 0.5s ease;
 
   background-image: 
     linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
@@ -446,6 +452,17 @@ const ToggleContainer = styled.label`
   }
 `;
 
+const LoadingScreen = styled.div`
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff4500;
+  font-family: monospace;
+  font-size: 1.2rem;
+  background: #050505;
+`;
+
 function AdminPage() {
   const navigate = useNavigate();
   const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData, matchData, updateMatchData } = useContext(DataContext);
@@ -453,12 +470,16 @@ function AdminPage() {
   const [activeTab, setActiveTab] = useState('matchData');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
+  // Security State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
   // Forms States
   const [motmForm, setMotmForm] = useState(motm);
   const [editingMatch, setEditingMatch] = useState(null);
   const [editingCase, setEditingCase] = useState(null);
   const [editingPlayer, setEditingPlayer] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Data loading state
 
   // Match Data Form
   const [matchForm, setMatchForm] = useState({
@@ -470,7 +491,7 @@ function AdminPage() {
     player: '', reason: '', fine: '', likelihood: 0.5, round: ''
   });
 
-  // Player Form - NÅ MED ROLLENE KAPTEIN OG LAGLEDER
+  // Player Form
   const [playerForm, setPlayerForm] = useState({
     name: '', 
     number: '', 
@@ -484,10 +505,36 @@ function AdminPage() {
   // Mobile Check
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
+  // --- SECURITY CHECK (NY) ---
   useEffect(() => {
-    const isAuthenticated = sessionStorage.getItem('adminAuthenticated');
-    if (!isAuthenticated) navigate('/admin-pin');
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth');
+        if (res.ok) {
+          setIsAuthenticated(true);
+        } else {
+          navigate('/admin-pin');
+        }
+      } catch (err) {
+        console.error("Auth check failed", err);
+        navigate('/admin-pin');
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    checkAuth();
   }, [navigate]);
+
+  // --- LOGOUT HANDLER (NY) ---
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      navigate('/admin-pin');
+    } catch (error) {
+      console.error("Logout failed", error);
+      navigate('/admin-pin');
+    }
+  };
 
   // --- Handlers ---
 
@@ -613,6 +660,12 @@ function AdminPage() {
     setLoading(false);
   };
 
+  if (authLoading) {
+    return <LoadingScreen>VERIFISERER TILGANG...</LoadingScreen>;
+  }
+
+  if (!isAuthenticated) return null;
+
   if (isMobile) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff', flexDirection: 'column', gap: '1rem' }}>
@@ -656,7 +709,11 @@ function AdminPage() {
           </MenuItem>
         </MenuGroup>
 
-        <div style={{ marginTop: 'auto' }}>
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Button onClick={handleLogout} style={{ width: '100%', fontSize: '0.8rem', background: '#222' }}>
+               <span>🔒 Logg ut</span>
+          </Button>
+          
           <Button danger onClick={async () => {
              if(window.confirm('SLETT ALT? Dette kan ikke angres.')) await clearAllData();
           }} style={{ width: '100%', fontSize: '0.8rem' }}>
@@ -913,7 +970,7 @@ function AdminPage() {
                 </UploadBox>
                 {motmForm.image && motmForm.image.length > 20 && (
                       <PreviewBox>
-                         <img src={motmForm.image} alt="Preview" />
+                          <img src={motmForm.image} alt="Preview" />
                       </PreviewBox>
                 )}
              </FormGroup>
