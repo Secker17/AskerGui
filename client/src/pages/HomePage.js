@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
@@ -21,6 +21,12 @@ const slam = keyframes`
   60% { transform: scale(0.8) rotate(-15deg); opacity: 1; }
   80% { transform: scale(1.1) rotate(-15deg); }
   100% { transform: scale(1) rotate(-15deg); }
+`;
+
+const snow = keyframes`
+  0% { transform: translateY(-10vh); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0.2; }
 `;
 
 // --- Styled Components ---
@@ -50,17 +56,13 @@ const Container = styled.div`
 
 // --- HERO SECTION ---
 const Hero = styled.section`
-  /* ENDRING HER: Redusert fra 100vh til 85vh for å trekke bunnen oppover */
   min-height: 85vh; 
   width: 100%;
   padding: 0 5%;
-  
   display: flex;
   align-items: flex-start; 
   justify-content: space-between; 
-  
   padding-top: 80px; 
-  
   position: relative;
   z-index: 2;
   overflow: hidden;
@@ -81,9 +83,9 @@ const Hero = styled.section`
     flex-direction: column; 
     justify-content: flex-start;
     padding-top: 80px; 
-    padding-bottom: 4rem; /* Litt mer padding i bunn på mobil så bildet får plass */
+    padding-bottom: 4rem;
     height: auto; 
-    min-height: auto; /* Lar høyden tilpasse seg innholdet på mobil */
+    min-height: auto;
   }
 `;
 
@@ -104,14 +106,12 @@ const HeroContent = styled.div`
   }
 `;
 
-// --- VISUALS COMPONENT (Gutta bildet) ---
 const HeroVisuals = styled.div`
   flex: 1;
   height: 100%; 
   display: flex;
   justify-content: flex-end;
   align-items: flex-end; 
-  
   position: absolute;
   bottom: 0;
   right: -2%; 
@@ -120,7 +120,6 @@ const HeroVisuals = styled.div`
   pointer-events: none; 
 
   img {
-    /* Justert litt ned for å matche den lavere seksjonen (85vh container -> 80vh bilde) */
     max-height: 80vh; 
     width: auto;
     object-fit: contain;
@@ -228,7 +227,6 @@ const FightCard = styled.div`
     min-width: auto;
     border-left: none;
     border-top: 4px solid #ff4500;
-    
     > * { transform: skew(0); }
   }
 
@@ -431,7 +429,8 @@ const LiveBtn = styled.a`
   }
 `;
 
-// --- Man of the Match ---
+// --- Man of the Match STYLES (FLYTTET OPP) ---
+
 const MotmSection = styled.section`
   padding: 4rem 2rem;
   position: relative;
@@ -552,6 +551,200 @@ const StatItem = styled.div`
   .lbl { font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: 700; margin-top: 5px; }
 `;
 
+// --- JULEKALENDER STYLES ---
+
+const CalendarSection = styled.section`
+  padding: 4rem 2rem;
+  background: linear-gradient(180deg, #050505 0%, #101010 50%, #050505 100%);
+  position: relative;
+  z-index: 5;
+  overflow: hidden;
+
+  /* Snø-effekt bakgrunn */
+  &::before {
+    content: '❄';
+    position: absolute;
+    top: -5vh;
+    left: 10%;
+    color: rgba(255,255,255,0.1);
+    font-size: 2rem;
+    animation: ${snow} 10s linear infinite;
+  }
+  &::after {
+    content: '❄';
+    position: absolute;
+    top: -5vh;
+    left: 80%;
+    color: rgba(255,255,255,0.1);
+    font-size: 1.5rem;
+    animation: ${snow} 7s linear infinite 2s;
+  }
+`;
+
+const CalendarHeader = styled(SectionHeader)`
+  margin-bottom: 3rem;
+  span { color: #ff4500; }
+  p {
+    font-size: 1rem;
+    color: #888;
+    margin-top: 0.5rem;
+    font-style: normal;
+    font-weight: 600;
+  }
+`;
+
+const CalendarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+`;
+
+const CalendarDoor = styled.div`
+  aspect-ratio: 1;
+  background: ${props => props.$isOpen ? '#ff4500' : '#1a1a1a'};
+  border: 2px solid ${props => props.$isOpen ? '#ff4500' : '#333'};
+  color: ${props => props.$isOpen ? 'black' : 'white'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  cursor: ${props => props.$isLocked ? 'not-allowed' : 'pointer'};
+  opacity: ${props => props.$isLocked ? 0.4 : 1};
+  position: relative;
+  transition: all 0.3s ease;
+  transform: skew(-5deg);
+
+  &:hover {
+    transform: ${props => !props.$isLocked ? 'skew(-5deg) scale(1.1)' : 'skew(-5deg)'};
+    box-shadow: ${props => !props.$isLocked ? '0 0 20px rgba(255, 69, 0, 0.4)' : 'none'};
+    border-color: ${props => !props.$isLocked ? '#ff4500' : '#333'};
+  }
+
+  &::after {
+    content: '${props => props.$isLocked ? '🔒' : (props.$isOpen ? '✅' : '')}';
+    position: absolute;
+    font-size: 1rem;
+    bottom: 5px;
+    right: 5px;
+  }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+`;
+
+const ModalContent = styled.div`
+  background: #111;
+  border: 2px solid #ff4500;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 0 50px rgba(255,69,0,0.3);
+  transform: skew(-2deg);
+
+  h3 {
+    font-size: 2rem;
+    text-transform: uppercase;
+    color: white;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    font-weight: 900;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+    cursor: pointer;
+    &:hover { color: white; }
+  }
+`;
+
+// --- NY KOMPONENT FOR BILDET I MODALEN ---
+const MysteryImageContainer = styled.div`
+  width: 100%;
+  height: 300px;
+  background: radial-gradient(circle, #333 0%, #000 70%); /* Bakgrunn så den sorte figuren synes */
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #333;
+  overflow: hidden;
+  position: relative;
+`;
+
+const MysteryImage = styled.img`
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  /* Her skjer magien: brightness(0) gjør alt sort */
+  filter: ${props => props.$isRevealed ? 'none' : 'brightness(0)'};
+  /* Legger på skygge så silhuetten synes mot mørk bakgrunn */
+  filter: ${props => props.$isRevealed ? 'none' : 'brightness(0) drop-shadow(0 0 5px rgba(255,255,255,0.2))'};
+  transition: filter 1.5s ease-in-out;
+  pointer-events: none;
+`;
+
+const GuessInput = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  input {
+    background: #050505;
+    border: 1px solid #333;
+    padding: 1rem;
+    color: white;
+    font-size: 1.1rem;
+    font-family: inherit;
+    text-align: center;
+    &:focus { outline: 2px solid #ff4500; border-color: transparent; }
+  }
+
+  button {
+    background: #ff4500;
+    color: white;
+    border: none;
+    padding: 1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.2s;
+    &:hover { background: #ff5714; }
+  }
+
+  .hint-text {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  
+  .feedback {
+    margin-top: 1rem;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+  .correct { color: #4caf50; }
+  .wrong { color: #f44336; }
+`;
+
 const FeaturesSection = styled.section`
   padding: 4rem 2rem;
   max-width: 1300px;
@@ -629,12 +822,26 @@ const StatsContent = styled.div`
   .lbl { font-weight: 700; text-transform: uppercase; font-size: 0.9rem; margin-top: 5px; opacity: 0.8; }
 `;
 
+// --- DUMMY DATA FOR JULEKALENDER ---
+// VIKTIG: Legg inn ekte bilde-URLer her. Hvis URL mangler, vil silhuetten være tom.
+const calendarData = Array.from({ length: 24 }, (_, i) => ({
+  day: i + 1,
+  player: `Spiller ${i + 1}`,
+  hint: `Draktnummer ${i + 4}`,
+  image: '/images/gutta.png' // Bruker gutta.png som placeholder. BYTT UT MED UNIKT BILDE PER SPILLER!
+}));
+
 function HomePage() {
   const { motm, matchData } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
-  
   const teamImage = '/images/gutta.png'; 
   
+  // Kalender State
+  const [activeDoor, setActiveDoor] = useState(null); 
+  const [guess, setGuess] = useState('');
+  const [feedback, setFeedback] = useState(null);
+  const [openedDoors, setOpenedDoors] = useState([]); 
+
   const currentMatch = {
     homeTeam: 'Asker',
     awayTeam: 'HSIL', 
@@ -653,6 +860,44 @@ function HomePage() {
     if (home > away) return '3 POENG'; 
     if (home === away) return '1 POENG'; 
     return '0 POENG'; 
+  };
+
+  const handleDoorClick = (day) => {
+    const today = new Date();
+    // FOR TESTING: 
+    // const currentDay = 25; 
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth(); 
+
+    // Slå på sjekk her om du vil blokkere datoer:
+    if (day > currentDay && currentMonth === 11) {
+        alert("Hold hestene! Du kan ikke åpne denne luken før dagen er kommet.");
+        return;
+    }
+
+    const doorData = calendarData.find(d => d.day === day);
+    setActiveDoor(doorData);
+    setGuess('');
+    
+    // Hvis luken allerede er "vunnet", vis riktig med en gang, ellers nullstill
+    if (openedDoors.includes(day)) {
+        setFeedback('correct');
+    } else {
+        setFeedback(null);
+    }
+  };
+
+  const handleGuessSubmit = () => {
+    if (!activeDoor) return;
+    
+    if (guess.toLowerCase().trim() === activeDoor.player.toLowerCase().trim()) {
+        setFeedback('correct');
+        if (!openedDoors.includes(activeDoor.day)) {
+            setOpenedDoors([...openedDoors, activeDoor.day]);
+        }
+    } else {
+        setFeedback('wrong');
+    }
   };
 
   return (
@@ -716,8 +961,82 @@ function HomePage() {
         <HeroVisuals>
           <img src={teamImage} alt="Asker Gutta" />
         </HeroVisuals>
-
       </Hero>
+      
+      {/* --- JULEKALENDER START --- */}
+      <CalendarSection>
+        <CalendarHeader>
+            Guttas <span>Julekalender</span>
+            <p>Hvem skjuler seg i mørket? Gjett spilleren for å se bildet!</p>
+        </CalendarHeader>
+        
+        <CalendarGrid>
+            {calendarData.map((item) => {
+                const today = new Date().getDate();
+                const isLocked = item.day > today && new Date().getMonth() === 11; 
+                const isOpen = openedDoors.includes(item.day);
+
+                return (
+                    <CalendarDoor 
+                        key={item.day} 
+                        onClick={() => handleDoorClick(item.day)}
+                        $isLocked={isLocked}
+                        $isOpen={isOpen}
+                    >
+                        {item.day}
+                    </CalendarDoor>
+                );
+            })}
+        </CalendarGrid>
+
+        {/* Modal for gjetting */}
+        {activeDoor && (
+            <ModalOverlay onClick={() => setActiveDoor(null)}>
+                <ModalContent onClick={e => e.stopPropagation()}>
+                    <button className="close-btn" onClick={() => setActiveDoor(null)}>✕</button>
+                    <h3>Luke {activeDoor.day}</h3>
+                    
+                    {/* Silhuett-bilde container */}
+                    <MysteryImageContainer>
+                        <MysteryImage 
+                            src={activeDoor.image} 
+                            alt="Mystery Player" 
+                            $isRevealed={feedback === 'correct'} // Styrer om bildet er sort eller synlig
+                        />
+                    </MysteryImageContainer>
+
+                    <GuessInput>
+                        <p className="hint-text">Hint: {activeDoor.hint}</p>
+                        
+                        {/* Skjul input hvis man har gjettet riktig */}
+                        {feedback !== 'correct' && (
+                            <>
+                                <input 
+                                    type="text" 
+                                    placeholder="Hvilken spiller er dette?" 
+                                    value={guess}
+                                    onChange={(e) => setGuess(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleGuessSubmit()}
+                                />
+                                <button onClick={handleGuessSubmit}>Gjett Spiller</button>
+                            </>
+                        )}
+
+                        {feedback === 'wrong' && <p className="feedback wrong">Feil! Prøv igjen.</p>}
+                        {feedback === 'correct' && (
+                            <div className="feedback correct">
+                                <p>Riktig! 🦁</p>
+                                <p style={{color: 'white', fontSize: '1.2rem', marginTop: '0.5rem', fontWeight: '900', fontStyle: 'italic'}}>
+                                    {activeDoor.player}
+                                </p>
+                            </div>
+                        )}
+                    </GuessInput>
+                </ModalContent>
+            </ModalOverlay>
+        )}
+      </CalendarSection>
+      {/* --- JULEKALENDER SLUTT --- */}
 
       <MotmSection>
         <SectionHeader>Kampens <span>Gigant</span></SectionHeader>

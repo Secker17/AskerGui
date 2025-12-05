@@ -465,7 +465,16 @@ const LoadingScreen = styled.div`
 
 function AdminPage() {
   const navigate = useNavigate();
-  const { motm, updateMotm, matches, addMatch, deleteMatch, cases, addCase, deleteCase, players, addPlayer, deletePlayer, clearAllData, matchData, updateMatchData } = useContext(DataContext);
+  // Pass på at calendarData og funksjonene er tilgjengelig i Context!
+  const { 
+      motm, updateMotm, 
+      matches, addMatch, deleteMatch, 
+      cases, addCase, deleteCase, 
+      players, addPlayer, deletePlayer, 
+      matchData, updateMatchData,
+      calendarData, addToCalendar, deleteFromCalendar, // NYE FRA CONTEXT
+      clearAllData
+  } = useContext(DataContext);
   
   const [activeTab, setActiveTab] = useState('matchData');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -502,10 +511,19 @@ function AdminPage() {
     isTeamLeader: false
   });
 
+  // Julekalender Form (NY)
+  const [calendarForm, setCalendarForm] = useState({
+    day: '',
+    player: '',
+    hint: '',
+    image: ''
+  });
+  const [editingDoor, setEditingDoor] = useState(null);
+
   // Mobile Check
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-  // --- SECURITY CHECK (NY) ---
+  // --- SECURITY CHECK ---
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -525,7 +543,7 @@ function AdminPage() {
     checkAuth();
   }, [navigate]);
 
-  // --- LOGOUT HANDLER (NY) ---
+  // --- LOGOUT HANDLER ---
   const handleLogout = async () => {
     try {
       await fetch('/api/logout', { method: 'POST' });
@@ -558,7 +576,6 @@ function AdminPage() {
     updateMatchData({ ...matchData, [field]: value });
   };
 
-  // Håndter oppdatering av resultat (Score)
   const handleScoreUpdate = (team, value) => {
     const currentScore = matchData.score || { home: 0, away: 0 };
     const newScore = { ...currentScore, [team]: Number(value) };
@@ -574,8 +591,8 @@ function AdminPage() {
       position: player.position,
       image: player.image,
       imagePreview: player.image,
-      isCaptain: player.isCaptain || false, // Hent status
-      isTeamLeader: player.isTeamLeader || false // Hent status
+      isCaptain: player.isCaptain || false,
+      isTeamLeader: player.isTeamLeader || false
     });
     window.scrollTo(0,0);
   };
@@ -595,8 +612,8 @@ function AdminPage() {
         number: playerForm.number,
         position: playerForm.position,
         image: playerForm.imagePreview || playerForm.image || '🦁',
-        isCaptain: playerForm.isCaptain, // Lagre status
-        isTeamLeader: playerForm.isTeamLeader // Lagre status
+        isCaptain: playerForm.isCaptain,
+        isTeamLeader: playerForm.isTeamLeader
       };
 
       if (editingPlayer) {
@@ -660,6 +677,25 @@ function AdminPage() {
     setLoading(false);
   };
 
+  // --- CALENDAR HANDLERS (NY) ---
+  const handleSaveDoor = async () => {
+      if(!calendarForm.day || !calendarForm.player) return alert("Mangler dag eller spiller");
+      setLoading(true);
+      try {
+          await addToCalendar(calendarForm); // Funksjon fra Context
+          setCalendarForm({ day: '', player: '', hint: '', image: '' });
+          setEditingDoor(null);
+          alert("Luke lagret!");
+      } catch(e) { alert(e.message); }
+      setLoading(false);
+  };
+
+  const handleEditDoor = (door) => {
+      setEditingDoor(door);
+      setCalendarForm(door);
+      window.scrollTo(0,0);
+  };
+
   if (authLoading) {
     return <LoadingScreen>VERIFISERER TILGANG...</LoadingScreen>;
   }
@@ -707,6 +743,9 @@ function AdminPage() {
           <MenuItem active={activeTab === 'cases'} onClick={() => setActiveTab('cases')}>
             <span>⚖️</span> Botkassa
           </MenuItem>
+          <MenuItem active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')}>
+            <span>🎅</span> Julekalender
+          </MenuItem>
         </MenuGroup>
 
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -730,6 +769,7 @@ function AdminPage() {
             {activeTab === 'players' && 'Spillerstall'}
             {activeTab === 'matches' && 'Terminliste'}
             {activeTab === 'cases' && 'Botkassa'}
+            {activeTab === 'calendar' && 'Julekalender'}
           </h2>
           <p>Endringer lagres umiddelbart i Firebase.</p>
         </Header>
@@ -836,7 +876,7 @@ function AdminPage() {
           </div>
         )}
 
-        {/* --- TAB: PLAYERS (MED REDIGERING) --- */}
+        {/* --- TAB: PLAYERS --- */}
         {activeTab === 'players' && (
           <>
             <Card>
@@ -856,7 +896,6 @@ function AdminPage() {
                 </FormGroup>
               </div>
               
-              {/* ROLLER SEKSJON */}
               <div style={{display: 'flex', gap: '2rem', marginBottom: '1.5rem'}}>
                 <ToggleContainer $active={playerForm.isCaptain}>
                   <input 
@@ -913,7 +952,6 @@ function AdminPage() {
                     <h4>{p.name}</h4>
                     <p>#{p.number} • {p.position}</p>
                     
-                    {/* VISER STATUS PÅ ADMIN KORTET OGSÅ */}
                     <div style={{marginBottom:'1rem', display:'flex', gap:'0.5rem'}}>
                         {p.isCaptain && <span style={{fontSize:'0.7rem', background:'#ff4500', padding:'2px 6px', color:'black', fontWeight:'bold'}}>KAPTEIN</span>}
                         {p.isTeamLeader && <span style={{fontSize:'0.7rem', background:'#fff', padding:'2px 6px', color:'black', fontWeight:'bold'}}>LAGLEDER</span>}
@@ -1046,6 +1084,79 @@ function AdminPage() {
                         <div className="actions">
                             <SmallBtn onClick={() => {setEditingCase(c); setCaseForm(c); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn>
                             <SmallBtn danger onClick={() => deleteCase(c.id)}><span>Slett</span></SmallBtn>
+                        </div>
+                    </ListRow>
+                ))}
+            </Card>
+           </>
+        )}
+
+        {/* --- TAB: CALENDAR (JULEKALENDER) --- */}
+        {activeTab === 'calendar' && (
+           <>
+            <Card>
+                <CardTitle>{editingDoor ? `Rediger Luke ${editingDoor.day}` : 'Ny Julekalender Luke'}</CardTitle>
+                
+                {/* VELG SPILLER FOR AUTOFYLL */}
+                <FormGroup>
+                    <Label>Autofyll fra spillerliste</Label>
+                    <Select onChange={(e) => {
+                        const p = players.find(pl => pl.name === e.target.value);
+                        if(p) setCalendarForm(prev => ({...prev, player: p.name, image: p.image}));
+                    }}>
+                        <option>Velg spiller...</option>
+                        {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </Select>
+                </FormGroup>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+                    <FormGroup>
+                        <Label>Luke # (Dag)</Label>
+                        <Input type="number" min="1" max="24" value={calendarForm.day} onChange={e => setCalendarForm({...calendarForm, day: e.target.value})} placeholder="1-24" />
+                    </FormGroup>
+                    <FormGroup>
+                        <Label>Spiller Navn</Label>
+                        <Input value={calendarForm.player} onChange={e => setCalendarForm({...calendarForm, player: e.target.value})} placeholder="Navn..." />
+                    </FormGroup>
+                </div>
+                <FormGroup>
+                    <Label>Hint til brukeren</Label>
+                    <Input value={calendarForm.hint} onChange={e => setCalendarForm({...calendarForm, hint: e.target.value})} placeholder="F.eks: Draktnummer 10..." />
+                </FormGroup>
+
+                <FormGroup>
+                    <Label>Bilde (Blir automatisk sort silhuett på forsiden)</Label>
+                    <UploadBox>
+                        <input type="file" hidden onChange={(e) => handleFileUpload(e, setCalendarForm, 'image')} />
+                        <span>📸 Last opp bilde</span>
+                    </UploadBox>
+                    {calendarForm.image && (
+                        <PreviewBox style={{marginTop: '1rem'}}>
+                            <img src={calendarForm.image} alt="Preview" />
+                        </PreviewBox>
+                    )}
+                </FormGroup>
+
+                <div style={{display:'flex', gap:'1rem'}}>
+                  <Button onClick={handleSaveDoor} disabled={loading}>
+                      <span>{loading ? 'Lagrer...' : (editingDoor ? 'Oppdater Luke' : 'Legg til Luke')}</span>
+                  </Button>
+                  {editingDoor && <Button danger onClick={() => {setEditingDoor(null); setCalendarForm({day:'', player:'', hint:'', image:''})}}><span>Avbryt</span></Button>}
+                </div>
+            </Card>
+
+            <Card>
+                <CardTitle>Oversikt Luker ({calendarData ? calendarData.length : 0})</CardTitle>
+                {/* Sorter lukene etter dag */}
+                {calendarData && [...calendarData].sort((a,b) => a.day - b.day).map(d => (
+                    <ListRow key={d.day}>
+                        <div className="info">
+                            <span style={{color:'#ff4500', marginRight:'10px', fontSize:'1.2rem'}}>#{d.day}</span> 
+                            {d.player} <span style={{color:'#666', fontSize:'0.8rem', marginLeft:'10px'}}>({d.hint})</span>
+                        </div>
+                        <div className="actions">
+                            <SmallBtn onClick={() => handleEditDoor(d)}><span>Rediger</span></SmallBtn>
+                            <SmallBtn danger onClick={() => deleteFromCalendar(d.day)}><span>Slett</span></SmallBtn>
                         </div>
                     </ListRow>
                 ))}
