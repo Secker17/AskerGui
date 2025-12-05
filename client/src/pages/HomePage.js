@@ -33,13 +33,11 @@ const Container = styled.div`
   position: relative;
   overflow-x: hidden;
 
-  /* Aggressive Background Grid */
   background-image: 
     linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
   
-  /* Vignette effect */
   &::after {
     content: '';
     position: fixed;
@@ -50,14 +48,22 @@ const Container = styled.div`
   }
 `;
 
+// --- HERO SECTION ---
 const Hero = styled.section`
-  padding: 8rem 5%; 
-  min-height: 90vh;
+  /* ENDRING HER: Redusert fra 100vh til 85vh for å trekke bunnen oppover */
+  min-height: 85vh; 
+  width: 100%;
+  padding: 0 5%;
+  
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  align-items: flex-start; 
+  justify-content: space-between; 
+  
+  padding-top: 80px; 
+  
   position: relative;
   z-index: 2;
+  overflow: hidden;
 
   &::before {
     content: '';
@@ -71,24 +77,72 @@ const Hero = styled.section`
     z-index: -1;
   }
 
-  @media (max-width: 1024px) {
-    justify-content: center;
-    padding: 6rem 1.5rem 4rem; 
-    text-align: center;
-    min-height: auto; 
+  @media (max-width: 1200px) {
+    flex-direction: column; 
+    justify-content: flex-start;
+    padding-top: 80px; 
+    padding-bottom: 4rem; /* Litt mer padding i bunn på mobil så bildet får plass */
+    height: auto; 
+    min-height: auto; /* Lar høyden tilpasse seg innholdet på mobil */
   }
 `;
 
 const HeroContent = styled.div`
-  max-width: 900px;
+  flex: 1;
+  max-width: 800px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 1.5rem;
+  z-index: 10; 
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1200px) {
     align-items: center;
+    text-align: center;
+    margin-bottom: 2rem; 
+  }
+`;
+
+// --- VISUALS COMPONENT (Gutta bildet) ---
+const HeroVisuals = styled.div`
+  flex: 1;
+  height: 100%; 
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end; 
+  
+  position: absolute;
+  bottom: 0;
+  right: -2%; 
+  width: 55%;
+  z-index: 5;
+  pointer-events: none; 
+
+  img {
+    /* Justert litt ned for å matche den lavere seksjonen (85vh container -> 80vh bilde) */
+    max-height: 80vh; 
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
+    mask-image: none;
+  }
+
+  @media (max-width: 1200px) {
+    position: relative; 
+    width: 100%;
+    height: auto;
+    right: auto;
+    bottom: auto;
+    justify-content: center;
+    margin-top: -2rem; 
+    
+    img {
+      max-height: 50vh; 
+      width: 100%;
+      object-fit: contain;
+      mask-image: none;
+    }
   }
 `;
 
@@ -112,7 +166,7 @@ const LogoContainer = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: clamp(3.5rem, 10vw, 7rem); 
+  font-size: clamp(3rem, 6vw, 6.5rem); 
   line-height: 0.9;
   font-weight: 900;
   font-style: italic;
@@ -126,14 +180,10 @@ const Title = styled.h1`
   span {
     color: #ff4500;
   }
-
-  @media (max-width: 768px) {
-    text-shadow: 2px 2px 0px rgba(255, 69, 0, 0.3);
-  }
 `;
 
 const Subtitle = styled.div`
-  font-size: 1.8rem;
+  font-size: clamp(1rem, 2vw, 1.8rem);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 3px;
@@ -148,7 +198,6 @@ const Subtitle = styled.div`
     border-bottom: 3px solid #ff4500;
     padding-left: 0;
     padding-bottom: 0.8rem;
-    font-size: 1rem; 
     letter-spacing: 2px;
   }
 `;
@@ -160,33 +209,33 @@ const FightCard = styled.div`
   gap: 2rem;
   background: linear-gradient(135deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.95) 100%);
   border: 1px solid rgba(255,255,255,0.1);
-  padding: 2rem 4rem;
+  padding: 2rem 3rem;
   transform: skew(-10deg);
   border-left: 6px solid #ff4500;
   box-shadow: 0 20px 50px rgba(0,0,0,0.6);
   margin: 1.5rem 0;
   position: relative;
   width: auto;
-  min-width: 600px;
+  min-width: 500px;
 
   > * {
     transform: skew(10deg);
   }
 
-  @media (max-width: 768px) {
-    flex-direction: column; 
+  @media (max-width: 1200px) {
+    transform: skew(0);
     width: 100%;
     min-width: auto;
-    padding: 2rem 1rem;
-    gap: 1.5rem;
-    transform: skew(0); 
     border-left: none;
     border-top: 4px solid #ff4500;
-    border-bottom: 4px solid #ff4500;
-    background: rgba(10,10,10,0.8);
-    backdrop-filter: blur(10px);
     
     > * { transform: skew(0); }
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
   }
 `;
 
@@ -197,8 +246,8 @@ const TeamBlock = styled.div`
   position: relative;
   
   img {
-    width: 100px;
-    height: 100px;
+    width: 90px;
+    height: 90px;
     object-fit: contain;
     filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));
     opacity: ${props => props.$isLoser ? 0.5 : 1};
@@ -207,7 +256,7 @@ const TeamBlock = styled.div`
   
   span {
     font-weight: 900;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     text-transform: uppercase;
     margin-top: 0.8rem;
     letter-spacing: 1px;
@@ -216,8 +265,8 @@ const TeamBlock = styled.div`
   }
 
   @media (max-width: 768px) {
-    img { width: 80px; height: 80px; }
-    span { font-size: 1.5rem; }
+    img { width: 70px; height: 70px; }
+    span { font-size: 1rem; }
   }
 `;
 
@@ -246,7 +295,7 @@ const WinnerStamp = styled.div`
 `;
 
 const VS = styled.div`
-  font-size: 5rem;
+  font-size: 4rem;
   font-weight: 900;
   font-style: italic;
   color: transparent;
@@ -266,7 +315,7 @@ const VS = styled.div`
   }
 
   @media (max-width: 768px) {
-    font-size: 3rem;
+    font-size: 2.5rem;
     margin: 0.5rem 0;
     -webkit-text-stroke: 1px rgba(255,255,255,0.3);
     &::after { transform: translate(2px, 2px); }
@@ -279,7 +328,7 @@ const ScoreBoard = styled.div`
   gap: 1rem;
   
   .score {
-    font-size: 5rem;
+    font-size: 4rem;
     font-weight: 900;
     color: #fff;
     text-shadow: 0 0 20px rgba(255,255,255,0.3);
@@ -287,7 +336,7 @@ const ScoreBoard = styled.div`
   }
 
   .divider {
-    font-size: 3rem;
+    font-size: 2.5rem;
     color: #555;
     font-weight: 900;
   }
@@ -299,8 +348,8 @@ const ScoreBoard = styled.div`
   }
 
   @media (max-width: 768px) {
-    .score { font-size: 4rem; }
-    .divider { font-size: 2rem; }
+    .score { font-size: 3rem; }
+    .divider { font-size: 1.5rem; }
   }
 `;
 
@@ -308,6 +357,7 @@ const ActionButtons = styled.div`
   display: flex;
   gap: 1.5rem;
   margin-top: 2rem;
+  z-index: 20; 
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -370,7 +420,7 @@ const PrimaryBtn = styled(Link)`
 
 const LiveBtn = styled.a`
   ${ButtonStyles}
-  background: transparent;
+  background: rgba(0,0,0,0.5); 
   color: #ff4500;
   border: 2px solid #ff4500;
   animation: ${props => props.$isFinished ? 'none' : css`${pulse} 2s infinite`};
@@ -583,6 +633,8 @@ function HomePage() {
   const { motm, matchData } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   
+  const teamImage = '/images/gutta.png'; 
+  
   const currentMatch = {
     homeTeam: 'Asker',
     awayTeam: 'HSIL', 
@@ -594,16 +646,13 @@ function HomePage() {
     ...matchData 
   };
   
-  // LOGIKK: Beregn poengsum basert på resultat
   const getResultText = () => {
     if (!currentMatch.isFinished) return '100%';
-    
     const home = Number(currentMatch.score?.home || 0);
     const away = Number(currentMatch.score?.away || 0);
-
-    if (home > away) return '3 POENG'; // Seier
-    if (home === away) return '1 POENG'; // Uavgjort
-    return '0 POENG'; // Tap
+    if (home > away) return '3 POENG'; 
+    if (home === away) return '1 POENG'; 
+    return '0 POENG'; 
   };
 
   return (
@@ -662,8 +711,12 @@ function HomePage() {
               <span>{currentMatch.isFinished ? '📄 Se Kamprapport' : '🔴 Se Kampen Live'}</span>
             </LiveBtn>
           </ActionButtons>
-
         </HeroContent>
+
+        <HeroVisuals>
+          <img src={teamImage} alt="Asker Gutta" />
+        </HeroVisuals>
+
       </Hero>
 
       <MotmSection>
@@ -699,7 +752,6 @@ function HomePage() {
       <StatsBar>
         <StatsContent>
           <div>
-            {/* Dynamisk tekst for poeng */}
             <span className="num">{getResultText()}</span>
             <span className="lbl">{currentMatch.isFinished ? 'Resultat' : 'Fight'}</span>
           </div>
