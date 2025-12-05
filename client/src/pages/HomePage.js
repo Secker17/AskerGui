@@ -430,7 +430,6 @@ const LiveBtn = styled.a`
 `;
 
 // --- Man of the Match STYLES ---
-// (FLYTTET OPP FOR Å UNNGÅ FEILMELDINGER)
 
 const MotmSection = styled.section`
   padding: 4rem 2rem;
@@ -851,37 +850,76 @@ function HomePage() {
     return '0 POENG'; 
   };
 
+  // Funksjon for å sjekke svar ("fuzzy" match - tillater fornavn/etternavn)
+  const isCorrectGuess = (guess, answer) => {
+    if (!guess || !answer) return false;
+    const cleanGuess = guess.toLowerCase().trim();
+    const cleanAnswer = answer.toLowerCase().trim();
+    
+    // Sjekk nøyaktig match først
+    if (cleanGuess === cleanAnswer) return true;
+
+    // Sjekk om gjetningen er en del av navnet (F.eks "Magnus" i "Magnus Andersen")
+    // Vi splitter fasiten opp i deler (fornavn, mellomnavn, etternavn)
+    const answerParts = cleanAnswer.split(' ');
+    
+    // Hvis gjetningen matcher nøyaktig ett av navnene (fornavn eller etternavn)
+    return answerParts.some(part => part === cleanGuess);
+  };
+
   const handleDoorClick = (day) => {
     const today = new Date();
-    // FOR TESTING (fjern kommentar for å teste uavhengig av dato):
+    // FOR TESTING: Fjern kommentar under for å teste "som om" det er 25. desember osv
     // const currentDay = 25; 
     const currentDay = today.getDate();
-    const currentMonth = today.getMonth(); 
+    const currentMonth = today.getMonth(); // 11 er desember
 
-    // Slå på sjekk her om du vil blokkere datoer:
-    if (day > currentDay && currentMonth === 11) {
-        alert("Hold hestene! Du kan ikke åpne denne luken før dagen er kommet.");
+    // STRICT LOGIKK: Kun dagens luke kan åpnes.
+    // Hvis det IKKE er i dag:
+    if (day !== currentDay || currentMonth !== 11) {
+        // Legg til en liten sjekk: Er det desember?
+        // Hvis ikke desember (f.eks testing i november), kanskje tillat alt?
+        // Men basert på din forespørsel "ikke de før og etter":
+        
+        if (currentMonth !== 11) {
+            // Unntak for testing utenfor desember kan legges her,
+            // men vi kjører strict etter forespørsel:
+            alert("Det er ikke desember enda! Kom tilbake senere. 🎅");
+            return;
+        }
+
+        if (day < currentDay) {
+            alert("Denne luken er forbi! Du kan bare åpne dagens luke. 🔒");
+            return;
+        }
+        if (day > currentDay) {
+            alert("Hold hestene! Du kan ikke åpne luker frem i tid. 🚫");
+            return;
+        }
+    }
+
+    // Finn data for luken fra Databasen
+    const doorData = calendarData && calendarData.find(d => Number(d.day) === day);
+    
+    if (!doorData) {
+        alert("Ingen innhold i denne luken enda. Admin må legge det inn! 🦁");
         return;
     }
 
-    const doorData = calendarData && calendarData.find(d => d.day === day);
-    if (!doorData) return; // Ingen data for denne luken
-
     setActiveDoor(doorData);
     setGuess('');
+    setFeedback(null);
     
-    // Hvis luken allerede er "vunnet", vis riktig med en gang, ellers nullstill
+    // Hvis brukeren allerede har klart luken i denne sesjonen (openedDoors), vis suksess med en gang
     if (openedDoors.includes(day)) {
         setFeedback('correct');
-    } else {
-        setFeedback(null);
     }
   };
 
   const handleGuessSubmit = () => {
     if (!activeDoor) return;
     
-    if (guess.toLowerCase().trim() === activeDoor.player.toLowerCase().trim()) {
+    if (isCorrectGuess(guess, activeDoor.player)) {
         setFeedback('correct');
         if (!openedDoors.includes(activeDoor.day)) {
             setOpenedDoors([...openedDoors, activeDoor.day]);
@@ -890,6 +928,9 @@ function HomePage() {
         setFeedback('wrong');
     }
   };
+
+  // Generer dager 1-24 statisk, slik at alle luker vises uansett database-innhold
+  const days = Array.from({ length: 24 }, (_, i) => i + 1);
 
   return (
     <Container>
@@ -962,28 +1003,36 @@ function HomePage() {
         </CalendarHeader>
         
         <CalendarGrid>
-            {calendarData && calendarData.length > 0 ? (
-                calendarData.map((item) => {
-                    const today = new Date().getDate();
-                    const isLocked = item.day > today && new Date().getMonth() === 11; 
-                    const isOpen = openedDoors.includes(item.day);
+            {days.map((dayNum) => {
+                const today = new Date().getDate();
+                const currentMonth = new Date().getMonth(); // 11 = desember
+                
+                // Låst logikk: Låst hvis det IKKE er i dag (både før og etter, som du ba om)
+                // Merk: Vi sjekker om det er desember. Hvis ikke desember, er alt låst (eller åpent for test).
+                // Her antar vi strict: Låst hvis dag != i dag.
+                const isLocked = (dayNum !== today) || (currentMonth !== 11);
 
-                    return (
-                        <CalendarDoor 
-                            key={item.day} 
-                            onClick={() => handleDoorClick(item.day)}
-                            $isLocked={isLocked}
-                            $isOpen={isOpen}
-                        >
-                            {item.day}
-                        </CalendarDoor>
-                    );
-                })
-            ) : (
-                <p style={{textAlign: 'center', gridColumn: '1 / -1', color: '#666'}}>
-                    Ingen luker lagt til enda. Gå til Admin for å legge til!
-                </p>
-            )}
+                // For testing utenfor desember:
+                // const isLocked = dayNum !== 25; // Bytt ut 25 med en test-dag
+
+                const isOpen = openedDoors.includes(dayNum);
+
+                // Sjekk om vi faktisk har data (spiller/bilde) for denne dagen
+                const hasData = calendarData && calendarData.find(d => Number(d.day) === dayNum);
+
+                return (
+                    <CalendarDoor 
+                        key={dayNum} 
+                        // Kun klikkbar hvis vi har data
+                        onClick={() => hasData ? handleDoorClick(dayNum) : alert("Ingen luke her enda!")}
+                        $isLocked={isLocked || !hasData}
+                        $isOpen={isOpen}
+                        style={{ opacity: !hasData ? 0.2 : (isLocked ? 0.5 : 1) }}
+                    >
+                        {dayNum}
+                    </CalendarDoor>
+                );
+            })}
         </CalendarGrid>
 
         {/* Modal for gjetting */}
