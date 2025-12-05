@@ -4,6 +4,7 @@ import { database } from '../firebase';
 
 export const DataContext = createContext();
 
+// --- DEFAULT DATA ---
 const defaultMotm = {
   player: 'Magnus Andersen',
   position: 'Høyre Fløy',
@@ -14,17 +15,18 @@ const defaultMotm = {
 };
 
 const defaultMatches = [];
-
 const defaultCases = [];
-
 const defaultPlayers = [];
+const defaultCalendar = []; // Ny default for kalender
 
 const defaultMatchData = {
   homeTeam: 'Asker',
   awayTeam: 'HSIL',
   homeLogo: '/images/standard_832px-Asker_SK_logo.svg.png',
   awayLogo: '/images/HSIL logo desktop.png',
-  liveLink: ''
+  liveLink: '',
+  isFinished: false,
+  score: { home: 0, away: 0 }
 };
 
 export function DataProvider({ children }) {
@@ -33,18 +35,15 @@ export function DataProvider({ children }) {
   const [cases, setCases] = useState(defaultCases);
   const [players, setPlayers] = useState(defaultPlayers);
   const [matchData, setMatchData] = useState(defaultMatchData);
+  const [calendarData, setCalendarData] = useState(defaultCalendar); // Ny state
 
-  // Firebase listeners
+  // --- FIREBASE LISTENERS ---
   useEffect(() => {
     // Listen to MOTM
     const motmRef = ref(database, 'motm');
     const unsubscribeMotm = onValue(motmRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        setMotm(data);
-      } else {
-        setMotm(defaultMotm);
-      }
+      setMotm(data || defaultMotm);
     });
 
     // Listen to Matches
@@ -87,10 +86,19 @@ export function DataProvider({ children }) {
     const matchDataRef = ref(database, 'matchData');
     const unsubscribeMatchData = onValue(matchDataRef, (snapshot) => {
       const data = snapshot.val();
+      setMatchData(data || defaultMatchData);
+    });
+
+    // --- NY LISTENER: CALENDAR ---
+    const calendarRef = ref(database, 'calendar');
+    const unsubscribeCalendar = onValue(calendarRef, (snapshot) => {
+      const data = snapshot.val();
       if (data) {
-        setMatchData(data);
+        // Vi bruker Object.values her fordi vi lagrer med dag som key (1, 2, 3...)
+        const calendarArray = Object.values(data); 
+        setCalendarData(calendarArray);
       } else {
-        setMatchData(defaultMatchData);
+        setCalendarData([]);
       }
     });
 
@@ -101,12 +109,15 @@ export function DataProvider({ children }) {
       unsubscribeCases();
       unsubscribePlayers();
       unsubscribeMatchData();
+      unsubscribeCalendar(); // Husk cleanup
     };
   }, []);
 
+  // --- FUNCTIONS ---
+
   const updateMotm = async (newMotm) => {
     try {
-      setMotm(newMotm);
+      setMotm(newMotm); // Optimistic update
       await set(ref(database, 'motm'), newMotm);
       return true;
     } catch (error) {
@@ -219,11 +230,37 @@ export function DataProvider({ children }) {
     }
   };
 
+  // --- NYE FUNKSJONER: CALENDAR ---
+  
+  // Legger til eller oppdaterer en luke. Vi bruker 'day' som unik ID.
+  // Dette gjør at hvis du lagrer luke 1 på nytt, overskrives den gamle.
+  const addToCalendar = async (doorData) => {
+    try {
+      // Vi lagrer under 'calendar/{dag}' (f.eks 'calendar/1')
+      await set(ref(database, `calendar/${doorData.day}`), doorData);
+      return true;
+    } catch (error) {
+      console.error('Error adding to calendar:', error);
+      throw error;
+    }
+  };
+
+  const deleteFromCalendar = async (day) => {
+    try {
+      await remove(ref(database, `calendar/${day}`));
+      return true;
+    } catch (error) {
+      console.error('Error deleting from calendar:', error);
+      throw error;
+    }
+  };
+
   const clearAllData = async () => {
     try {
       await remove(ref(database, 'matches'));
       await remove(ref(database, 'cases'));
       await remove(ref(database, 'players'));
+      await remove(ref(database, 'calendar')); // Tømmer også kalender
       return true;
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -238,6 +275,7 @@ export function DataProvider({ children }) {
       cases, addCase, deleteCase, updateCase,
       players, addPlayer, deletePlayer, updatePlayer,
       matchData, updateMatchData,
+      calendarData, addToCalendar, deleteFromCalendar, // Eksporterer de nye funksjonene
       clearAllData
     }}>
       {children}

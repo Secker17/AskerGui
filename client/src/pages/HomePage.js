@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
@@ -429,7 +429,8 @@ const LiveBtn = styled.a`
   }
 `;
 
-// --- Man of the Match STYLES (FLYTTET OPP) ---
+// --- Man of the Match STYLES ---
+// (FLYTTET OPP FOR Å UNNGÅ FEILMELDINGER)
 
 const MotmSection = styled.section`
   padding: 4rem 2rem;
@@ -676,11 +677,10 @@ const ModalContent = styled.div`
   }
 `;
 
-// --- NY KOMPONENT FOR BILDET I MODALEN ---
 const MysteryImageContainer = styled.div`
   width: 100%;
   height: 300px;
-  background: radial-gradient(circle, #333 0%, #000 70%); /* Bakgrunn så den sorte figuren synes */
+  background: radial-gradient(circle, #333 0%, #000 70%);
   margin-bottom: 2rem;
   display: flex;
   align-items: center;
@@ -694,9 +694,7 @@ const MysteryImage = styled.img`
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
-  /* Her skjer magien: brightness(0) gjør alt sort */
   filter: ${props => props.$isRevealed ? 'none' : 'brightness(0)'};
-  /* Legger på skygge så silhuetten synes mot mørk bakgrunn */
   filter: ${props => props.$isRevealed ? 'none' : 'brightness(0) drop-shadow(0 0 5px rgba(255,255,255,0.2))'};
   transition: filter 1.5s ease-in-out;
   pointer-events: none;
@@ -822,17 +820,8 @@ const StatsContent = styled.div`
   .lbl { font-weight: 700; text-transform: uppercase; font-size: 0.9rem; margin-top: 5px; opacity: 0.8; }
 `;
 
-// --- DUMMY DATA FOR JULEKALENDER ---
-// VIKTIG: Legg inn ekte bilde-URLer her. Hvis URL mangler, vil silhuetten være tom.
-const calendarData = Array.from({ length: 24 }, (_, i) => ({
-  day: i + 1,
-  player: `Spiller ${i + 1}`,
-  hint: `Draktnummer ${i + 4}`,
-  image: '/images/gutta.png' // Bruker gutta.png som placeholder. BYTT UT MED UNIKT BILDE PER SPILLER!
-}));
-
 function HomePage() {
-  const { motm, matchData } = useContext(DataContext);
+  const { motm, matchData, calendarData } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   const teamImage = '/images/gutta.png'; 
   
@@ -864,7 +853,7 @@ function HomePage() {
 
   const handleDoorClick = (day) => {
     const today = new Date();
-    // FOR TESTING: 
+    // FOR TESTING (fjern kommentar for å teste uavhengig av dato):
     // const currentDay = 25; 
     const currentDay = today.getDate();
     const currentMonth = today.getMonth(); 
@@ -875,7 +864,9 @@ function HomePage() {
         return;
     }
 
-    const doorData = calendarData.find(d => d.day === day);
+    const doorData = calendarData && calendarData.find(d => d.day === day);
+    if (!doorData) return; // Ingen data for denne luken
+
     setActiveDoor(doorData);
     setGuess('');
     
@@ -971,22 +962,28 @@ function HomePage() {
         </CalendarHeader>
         
         <CalendarGrid>
-            {calendarData.map((item) => {
-                const today = new Date().getDate();
-                const isLocked = item.day > today && new Date().getMonth() === 11; 
-                const isOpen = openedDoors.includes(item.day);
+            {calendarData && calendarData.length > 0 ? (
+                calendarData.map((item) => {
+                    const today = new Date().getDate();
+                    const isLocked = item.day > today && new Date().getMonth() === 11; 
+                    const isOpen = openedDoors.includes(item.day);
 
-                return (
-                    <CalendarDoor 
-                        key={item.day} 
-                        onClick={() => handleDoorClick(item.day)}
-                        $isLocked={isLocked}
-                        $isOpen={isOpen}
-                    >
-                        {item.day}
-                    </CalendarDoor>
-                );
-            })}
+                    return (
+                        <CalendarDoor 
+                            key={item.day} 
+                            onClick={() => handleDoorClick(item.day)}
+                            $isLocked={isLocked}
+                            $isOpen={isOpen}
+                        >
+                            {item.day}
+                        </CalendarDoor>
+                    );
+                })
+            ) : (
+                <p style={{textAlign: 'center', gridColumn: '1 / -1', color: '#666'}}>
+                    Ingen luker lagt til enda. Gå til Admin for å legge til!
+                </p>
+            )}
         </CalendarGrid>
 
         {/* Modal for gjetting */}
@@ -998,11 +995,15 @@ function HomePage() {
                     
                     {/* Silhuett-bilde container */}
                     <MysteryImageContainer>
-                        <MysteryImage 
-                            src={activeDoor.image} 
-                            alt="Mystery Player" 
-                            $isRevealed={feedback === 'correct'} // Styrer om bildet er sort eller synlig
-                        />
+                        {activeDoor.image ? (
+                            <MysteryImage 
+                                src={activeDoor.image} 
+                                alt="Mystery Player" 
+                                $isRevealed={feedback === 'correct'} 
+                            />
+                        ) : (
+                            <div style={{color:'#666'}}>Ingen bilde lastet opp</div>
+                        )}
                     </MysteryImageContainer>
 
                     <GuessInput>
