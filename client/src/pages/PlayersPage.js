@@ -219,6 +219,29 @@ const LeaderBadge = styled.div`
   border-left: 4px solid #ff4500;
 `;
 
+const TrainerBadge = styled.div`
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  background: #1e40af;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  transform: skew(5deg);
+  z-index: 10;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+
+  &::after {
+    content: 'T';
+  }
+`;
+
 const PlayerCard = styled.div`
   background: #121212;
   height: 400px;
@@ -285,7 +308,7 @@ const PlayerCard = styled.div`
       transform: skew(5deg) translateY(-5px);
     }
 
-    ${CaptainBadge}, ${LeaderBadge} {
+    ${CaptainBadge}, ${LeaderBadge}, ${TrainerBadge} {
         transform: skew(5deg) scale(1.1);
     }
 
@@ -306,12 +329,12 @@ const PlayerCard = styled.div`
     }
 
     ${CardContent} { transform: skew(0); }
-    ${CaptainBadge}, ${LeaderBadge} { transform: skew(0); }
+    ${CaptainBadge}, ${LeaderBadge}, ${TrainerBadge} { transform: skew(0); }
     
     &:hover {
       transform: translateY(-5px);
       .img-wrapper img { transform: scale(1.05); }
-      ${CardContent} { transform: skew(0) translateY(-5px); }
+      ${CardContent} { transform: translateY(-5px); }
     }
   }
 `;
@@ -397,6 +420,9 @@ function PlayersPage() {
               
               {/* Viser Lagleder Badge hvis isTeamLeader er true */}
               {player.isTeamLeader && <LeaderBadge>LAGLEDER</LeaderBadge>}
+              
+              {/* Viser Trener Badge hvis isTrainer er true */}
+              {player.isTrainer && <TrainerBadge title="Trener" />}
 
               <div className="img-wrapper">
                 {player.image && (player.image.startsWith('data:') || player.image.startsWith('http')) ? (

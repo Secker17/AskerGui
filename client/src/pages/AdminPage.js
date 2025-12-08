@@ -508,7 +508,8 @@ function AdminPage() {
     imagePreview: null, 
     image: '',
     isCaptain: false,
-    isTeamLeader: false
+    isTeamLeader: false,
+    isTrainer: false
   });
 
   // Julekalender Form (NY)
@@ -592,14 +593,15 @@ function AdminPage() {
       image: player.image,
       imagePreview: player.image,
       isCaptain: player.isCaptain || false,
-      isTeamLeader: player.isTeamLeader || false
+      isTeamLeader: player.isTeamLeader || false,
+      isTrainer: player.isTrainer || false
     });
     window.scrollTo(0,0);
   };
 
   const handleCancelEditPlayer = () => {
     setEditingPlayer(null);
-    setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false });
+    setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false });
   };
 
   const handleSavePlayer = async () => {
@@ -613,7 +615,8 @@ function AdminPage() {
         position: playerForm.position,
         image: playerForm.imagePreview || playerForm.image || '🦁',
         isCaptain: playerForm.isCaptain,
-        isTeamLeader: playerForm.isTeamLeader
+        isTeamLeader: playerForm.isTeamLeader,
+        isTrainer: playerForm.isTrainer
       };
 
       if (editingPlayer) {
@@ -626,7 +629,7 @@ function AdminPage() {
         alert('Spiller lagt til!');
       }
       
-      setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false });
+      setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false });
       
     } catch (e) { alert(e.message); }
     setLoading(false);
@@ -904,7 +907,7 @@ function AdminPage() {
                     onChange={(e) => setPlayerForm({...playerForm, isCaptain: e.target.checked})} 
                   />
                   <div className="switch"></div>
-                  <span>Kaptein ©</span>
+                  <span>Kaptein </span>
                 </ToggleContainer>
 
                 <ToggleContainer $active={playerForm.isTeamLeader}>
@@ -915,6 +918,16 @@ function AdminPage() {
                   />
                   <div className="switch"></div>
                   <span>Lagleder</span>
+                </ToggleContainer>
+
+                <ToggleContainer $active={playerForm.isTrainer}>
+                  <input 
+                    type="checkbox" 
+                    checked={playerForm.isTrainer} 
+                    onChange={(e) => setPlayerForm({...playerForm, isTrainer: e.target.checked})} 
+                  />
+                  <div className="switch"></div>
+                  <span>Trener</span>
                 </ToggleContainer>
               </div>
 
@@ -955,6 +968,7 @@ function AdminPage() {
                     <div style={{marginBottom:'1rem', display:'flex', gap:'0.5rem'}}>
                         {p.isCaptain && <span style={{fontSize:'0.7rem', background:'#ff4500', padding:'2px 6px', color:'black', fontWeight:'bold'}}>KAPTEIN</span>}
                         {p.isTeamLeader && <span style={{fontSize:'0.7rem', background:'#fff', padding:'2px 6px', color:'black', fontWeight:'bold'}}>LAGLEDER</span>}
+                        {p.isTrainer && <span style={{fontSize:'0.7rem', background:'#1e40af', padding:'2px 6px', color:'white', fontWeight:'bold'}}>TRENER</span>}
                     </div>
 
                     <div className="actions">

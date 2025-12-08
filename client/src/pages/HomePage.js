@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
@@ -106,6 +106,7 @@ const HeroContent = styled.div`
   }
 `;
 
+// --- VISUALS COMPONENT (Gutta bildet med ny gradient) ---
 const HeroVisuals = styled.div`
   flex: 1;
   height: 100%; 
@@ -119,12 +120,26 @@ const HeroVisuals = styled.div`
   z-index: 5;
   pointer-events: none; 
 
+  /* Gradient overlay som fader bildet til sort i bunnen */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%; 
+    background: linear-gradient(to bottom, transparent 0%, #050505 100%);
+    z-index: 6; 
+  }
+
   img {
     max-height: 80vh; 
     width: auto;
     object-fit: contain;
     filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
     mask-image: none;
+    position: relative;
+    z-index: 5;
   }
 
   @media (max-width: 1200px) {
@@ -554,7 +569,7 @@ const StatItem = styled.div`
 // --- JULEKALENDER STYLES ---
 
 const CalendarSection = styled.section`
-  padding: 4rem 2rem;
+  padding: 10rem 2rem 4rem 2rem;
   background: linear-gradient(180deg, #050505 0%, #101010 50%, #050505 100%);
   position: relative;
   z-index: 5;
@@ -824,11 +839,21 @@ function HomePage() {
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   const teamImage = '/images/gutta.png'; 
   
-  // Kalender State
+  // --- LOCALSTORAGE LOGIC FOR PROGRESS (PER PERSON) ---
   const [activeDoor, setActiveDoor] = useState(null); 
   const [guess, setGuess] = useState('');
   const [feedback, setFeedback] = useState(null);
-  const [openedDoors, setOpenedDoors] = useState([]); 
+  
+  // Henter lagret fremdrift, eller starter med tom liste
+  const [openedDoors, setOpenedDoors] = useState(() => {
+    const saved = localStorage.getItem('calendar_progress');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Lagrer fremdrift automatisk når 'openedDoors' endres
+  useEffect(() => {
+    localStorage.setItem('calendar_progress', JSON.stringify(openedDoors));
+  }, [openedDoors]);
 
   const currentMatch = {
     homeTeam: 'Asker',
@@ -850,44 +875,27 @@ function HomePage() {
     return '0 POENG'; 
   };
 
-  // Funksjon for å sjekke svar ("fuzzy" match - tillater fornavn/etternavn)
   const isCorrectGuess = (guess, answer) => {
     if (!guess || !answer) return false;
     const cleanGuess = guess.toLowerCase().trim();
     const cleanAnswer = answer.toLowerCase().trim();
-    
-    // Sjekk nøyaktig match først
     if (cleanGuess === cleanAnswer) return true;
-
-    // Sjekk om gjetningen er en del av navnet (F.eks "Magnus" i "Magnus Andersen")
-    // Vi splitter fasiten opp i deler (fornavn, mellomnavn, etternavn)
     const answerParts = cleanAnswer.split(' ');
-    
-    // Hvis gjetningen matcher nøyaktig ett av navnene (fornavn eller etternavn)
     return answerParts.some(part => part === cleanGuess);
   };
 
   const handleDoorClick = (day) => {
     const today = new Date();
-    // FOR TESTING: Fjern kommentar under for å teste "som om" det er 25. desember osv
+    // FOR TESTING: 
     // const currentDay = 25; 
     const currentDay = today.getDate();
-    const currentMonth = today.getMonth(); // 11 er desember
+    const currentMonth = today.getMonth(); 
 
-    // STRICT LOGIKK: Kun dagens luke kan åpnes.
-    // Hvis det IKKE er i dag:
     if (day !== currentDay || currentMonth !== 11) {
-        // Legg til en liten sjekk: Er det desember?
-        // Hvis ikke desember (f.eks testing i november), kanskje tillat alt?
-        // Men basert på din forespørsel "ikke de før og etter":
-        
         if (currentMonth !== 11) {
-            // Unntak for testing utenfor desember kan legges her,
-            // men vi kjører strict etter forespørsel:
             alert("Det er ikke desember enda! Kom tilbake senere. 🎅");
             return;
         }
-
         if (day < currentDay) {
             alert("Denne luken er forbi! Du kan bare åpne dagens luke. 🔒");
             return;
@@ -898,9 +906,7 @@ function HomePage() {
         }
     }
 
-    // Finn data for luken fra Databasen
     const doorData = calendarData && calendarData.find(d => Number(d.day) === day);
-    
     if (!doorData) {
         alert("Ingen innhold i denne luken enda. Admin må legge det inn! 🦁");
         return;
@@ -910,7 +916,6 @@ function HomePage() {
     setGuess('');
     setFeedback(null);
     
-    // Hvis brukeren allerede har klart luken i denne sesjonen (openedDoors), vis suksess med en gang
     if (openedDoors.includes(day)) {
         setFeedback('correct');
     }
@@ -929,7 +934,6 @@ function HomePage() {
     }
   };
 
-  // Generer dager 1-24 statisk, slik at alle luker vises uansett database-innhold
   const days = Array.from({ length: 24 }, (_, i) => i + 1);
 
   return (
@@ -1005,25 +1009,18 @@ function HomePage() {
         <CalendarGrid>
             {days.map((dayNum) => {
                 const today = new Date().getDate();
-                const currentMonth = new Date().getMonth(); // 11 = desember
+                const currentMonth = new Date().getMonth(); 
                 
-                // Låst logikk: Låst hvis det IKKE er i dag (både før og etter, som du ba om)
-                // Merk: Vi sjekker om det er desember. Hvis ikke desember, er alt låst (eller åpent for test).
-                // Her antar vi strict: Låst hvis dag != i dag.
+                // Låst logikk: Låst hvis det IKKE er i dag (både før og etter)
+                // Merk: Endre gjerne 'today' til et fast tall (f.eks 1) for å teste at luke 1 fungerer
                 const isLocked = (dayNum !== today) || (currentMonth !== 11);
 
-                // For testing utenfor desember:
-                // const isLocked = dayNum !== 25; // Bytt ut 25 med en test-dag
-
                 const isOpen = openedDoors.includes(dayNum);
-
-                // Sjekk om vi faktisk har data (spiller/bilde) for denne dagen
                 const hasData = calendarData && calendarData.find(d => Number(d.day) === dayNum);
 
                 return (
                     <CalendarDoor 
                         key={dayNum} 
-                        // Kun klikkbar hvis vi har data
                         onClick={() => hasData ? handleDoorClick(dayNum) : alert("Ingen luke her enda!")}
                         $isLocked={isLocked || !hasData}
                         $isOpen={isOpen}
@@ -1042,7 +1039,6 @@ function HomePage() {
                     <button className="close-btn" onClick={() => setActiveDoor(null)}>✕</button>
                     <h3>Luke {activeDoor.day}</h3>
                     
-                    {/* Silhuett-bilde container */}
                     <MysteryImageContainer>
                         {activeDoor.image ? (
                             <MysteryImage 
@@ -1058,7 +1054,6 @@ function HomePage() {
                     <GuessInput>
                         <p className="hint-text">Hint: {activeDoor.hint}</p>
                         
-                        {/* Skjul input hvis man har gjettet riktig */}
                         {feedback !== 'correct' && (
                             <>
                                 <input 
