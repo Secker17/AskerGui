@@ -115,7 +115,7 @@ const HeroVisuals = styled.div`
   align-items: flex-end; 
   position: absolute;
   bottom: 0;
-  right: -2%; 
+  right: 12%; 
   width: 55%;
   z-index: 5;
   pointer-events: none; 
