@@ -17,7 +17,8 @@ const defaultMotm = {
 const defaultMatches = [];
 const defaultCases = [];
 const defaultPlayers = [];
-const defaultCalendar = []; // Ny default for kalender
+const defaultCalendar = [];
+const defaultLeagueTable = []; // Ny default for tabell
 
 const defaultMatchData = {
   homeTeam: 'Asker',
@@ -35,7 +36,8 @@ export function DataProvider({ children }) {
   const [cases, setCases] = useState(defaultCases);
   const [players, setPlayers] = useState(defaultPlayers);
   const [matchData, setMatchData] = useState(defaultMatchData);
-  const [calendarData, setCalendarData] = useState(defaultCalendar); // Ny state
+  const [calendarData, setCalendarData] = useState(defaultCalendar);
+  const [leagueTable, setLeagueTable] = useState(defaultLeagueTable); // Ny state for tabell
 
   // --- FIREBASE LISTENERS ---
   useEffect(() => {
@@ -89,16 +91,28 @@ export function DataProvider({ children }) {
       setMatchData(data || defaultMatchData);
     });
 
-    // --- NY LISTENER: CALENDAR ---
+    // Listen to Calendar
     const calendarRef = ref(database, 'calendar');
     const unsubscribeCalendar = onValue(calendarRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Vi bruker Object.values her fordi vi lagrer med dag som key (1, 2, 3...)
         const calendarArray = Object.values(data); 
         setCalendarData(calendarArray);
       } else {
         setCalendarData([]);
+      }
+    });
+
+    // --- NY LISTENER: TABLE (TABELL) ---
+    const tableRef = ref(database, 'table');
+    const unsubscribeTable = onValue(tableRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Konverterer objektet fra Firebase til en array med ID
+        const tableArray = Object.keys(data).map(key => ({ ...data[key], id: key }));
+        setLeagueTable(tableArray);
+      } else {
+        setLeagueTable([]);
       }
     });
 
@@ -109,7 +123,8 @@ export function DataProvider({ children }) {
       unsubscribeCases();
       unsubscribePlayers();
       unsubscribeMatchData();
-      unsubscribeCalendar(); // Husk cleanup
+      unsubscribeCalendar();
+      unsubscribeTable(); // Husk cleanup for tabell
     };
   }, []);
 
@@ -117,7 +132,7 @@ export function DataProvider({ children }) {
 
   const updateMotm = async (newMotm) => {
     try {
-      setMotm(newMotm); // Optimistic update
+      setMotm(newMotm);
       await set(ref(database, 'motm'), newMotm);
       return true;
     } catch (error) {
@@ -230,13 +245,8 @@ export function DataProvider({ children }) {
     }
   };
 
-  // --- NYE FUNKSJONER: CALENDAR ---
-  
-  // Legger til eller oppdaterer en luke. Vi bruker 'day' som unik ID.
-  // Dette gjør at hvis du lagrer luke 1 på nytt, overskrives den gamle.
   const addToCalendar = async (doorData) => {
     try {
-      // Vi lagrer under 'calendar/{dag}' (f.eks 'calendar/1')
       await set(ref(database, `calendar/${doorData.day}`), doorData);
       return true;
     } catch (error) {
@@ -255,12 +265,46 @@ export function DataProvider({ children }) {
     }
   };
 
+  // --- NYE FUNKSJONER: TABLE (TABELL) ---
+  
+  const addTableRow = async (row) => {
+    try {
+      const newRowRef = push(ref(database, 'table'));
+      await set(newRowRef, row);
+      return true;
+    } catch (error) {
+      console.error('Error adding table row:', error);
+      throw error;
+    }
+  };
+
+  const deleteTableRow = async (id) => {
+    try {
+      await remove(ref(database, `table/${id}`));
+      return true;
+    } catch (error) {
+      console.error('Error deleting table row:', error);
+      throw error;
+    }
+  };
+
+  const updateTableRow = async (id, updatedRow) => {
+    try {
+      await set(ref(database, `table/${id}`), updatedRow);
+      return true;
+    } catch (error) {
+      console.error('Error updating table row:', error);
+      throw error;
+    }
+  };
+
   const clearAllData = async () => {
     try {
       await remove(ref(database, 'matches'));
       await remove(ref(database, 'cases'));
       await remove(ref(database, 'players'));
-      await remove(ref(database, 'calendar')); // Tømmer også kalender
+      await remove(ref(database, 'calendar'));
+      await remove(ref(database, 'table')); // Tømmer også tabellen
       return true;
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -275,7 +319,9 @@ export function DataProvider({ children }) {
       cases, addCase, deleteCase, updateCase,
       players, addPlayer, deletePlayer, updatePlayer,
       matchData, updateMatchData,
-      calendarData, addToCalendar, deleteFromCalendar, // Eksporterer de nye funksjonene
+      calendarData, addToCalendar, deleteFromCalendar,
+      // Eksporterer Tabell-funksjonalitet:
+      leagueTable, addTableRow, deleteTableRow, updateTableRow, 
       clearAllData
     }}>
       {children}

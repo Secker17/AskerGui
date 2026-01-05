@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import styled, { css, keyframes } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -202,6 +202,12 @@ const Input = styled.input`
     border-color: #ff4500;
     background: #000;
   }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: transparent;
+  }
 `;
 
 const Select = styled.select`
@@ -389,12 +395,14 @@ const ListRow = styled.div`
     text-transform: uppercase;
     font-size: 0.9rem;
     color: #ddd;
+    display: flex;
+    gap: 15px;
+    align-items: center;
   }
   
   .actions { display: flex; gap: 0.5rem; }
 `;
 
-// Ny style for score input
 const ScoreInputWrapper = styled.div`
   display: flex;
   gap: 2rem;
@@ -465,255 +473,210 @@ const LoadingScreen = styled.div`
 
 function AdminPage() {
   const navigate = useNavigate();
-  // Pass på at calendarData og funksjonene er tilgjengelig i Context!
   const { 
       motm, updateMotm, 
       matches, addMatch, deleteMatch, 
       cases, addCase, deleteCase, 
       players, addPlayer, deletePlayer, 
       matchData, updateMatchData,
-      calendarData, addToCalendar, deleteFromCalendar, // NYE FRA CONTEXT
+      leagueTable, addTableRow, deleteTableRow, updateTableRow, 
       clearAllData
   } = useContext(DataContext);
   
   const [activeTab, setActiveTab] = useState('matchData');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // Security State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Forms States
+  // States
   const [motmForm, setMotmForm] = useState(motm);
   const [editingMatch, setEditingMatch] = useState(null);
   const [editingCase, setEditingCase] = useState(null);
   const [editingPlayer, setEditingPlayer] = useState(null);
-  const [loading, setLoading] = useState(false); // Data loading state
+  const [loading, setLoading] = useState(false); 
 
-  // Match Data Form
-  const [matchForm, setMatchForm] = useState({
-    date: '', time: '', opponent: '', location: '', logo: ''
+  const [matchForm, setMatchForm] = useState({ date: '', time: '', opponent: '', location: '', logo: '' });
+  const [caseForm, setCaseForm] = useState({ player: '', reason: '', fine: '', likelihood: 0.5, round: '' });
+  const [playerForm, setPlayerForm] = useState({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false });
+  
+  // Tabell form (Forenklet: Kun lag og kampdata, poeng beregnes)
+  const [tableForm, setTableForm] = useState({
+    team: '', played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0
   });
+  const [editingTableRow, setEditingTableRow] = useState(null);
 
-  // Case Form
-  const [caseForm, setCaseForm] = useState({
-    player: '', reason: '', fine: '', likelihood: 0.5, round: ''
-  });
-
-  // Player Form
-  const [playerForm, setPlayerForm] = useState({
-    name: '', 
-    number: '', 
-    position: '', 
-    imagePreview: null, 
-    image: '',
-    isCaptain: false,
-    isTeamLeader: false,
-    isTrainer: false
-  });
-
-  // Julekalender Form (NY)
-  const [calendarForm, setCalendarForm] = useState({
-    day: '',
-    player: '',
-    hint: '',
-    image: ''
-  });
-  const [editingDoor, setEditingDoor] = useState(null);
-
-  // Mobile Check
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-  // --- SECURITY CHECK ---
+  // --- PRE-DEFINED TEAMS FROM IMAGE ---
+  const initialTeams = [
+    { team: 'Romsås/Ellingsrud', played: 8, won: 7, draw: 1, lost: 0, gf: 236, ga: 127 },
+    { team: 'Gøy HK 4', played: 8, won: 6, draw: 2, lost: 0, gf: 248, ga: 169 },
+    { team: 'Asker/Gui', played: 7, won: 5, draw: 1, lost: 1, gf: 233, ga: 169 },
+    { team: 'Frogner 2', played: 6, won: 4, draw: 0, lost: 2, gf: 174, ga: 139 },
+    { team: 'Haga/Raumnes & Årnes', played: 8, won: 3, draw: 0, lost: 5, gf: 207, ga: 212 },
+    { team: 'Skedsmo', played: 9, won: 3, draw: 0, lost: 6, gf: 206, ga: 233 },
+    { team: 'Raballder 2', played: 8, won: 3, draw: 0, lost: 5, gf: 154, ga: 181 },
+    { team: 'Nordstrand Rullestolhåndball', played: 3, won: 2, draw: 0, lost: 1, gf: 74, ga: 65 },
+    { team: 'Gjerdrum/Kløfta', played: 9, won: 2, draw: 0, lost: 7, gf: 181, ga: 193 },
+    { team: 'HSIL/Ammerud', played: 8, won: 0, draw: 0, lost: 8, gf: 85, ga: 310 },
+  ];
+
+  // --- AUTH ---
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const res = await fetch('/api/auth');
-        if (res.ok) {
-          setIsAuthenticated(true);
-        } else {
-          navigate('/admin-pin');
-        }
-      } catch (err) {
-        console.error("Auth check failed", err);
-        navigate('/admin-pin');
-      } finally {
-        setAuthLoading(false);
-      }
+        if (res.ok) setIsAuthenticated(true);
+        else navigate('/admin-pin');
+      } catch (err) { navigate('/admin-pin'); } 
+      finally { setAuthLoading(false); }
     };
     checkAuth();
   }, [navigate]);
 
-  // --- LOGOUT HANDLER ---
   const handleLogout = async () => {
-    try {
-      await fetch('/api/logout', { method: 'POST' });
-      navigate('/admin-pin');
-    } catch (error) {
-      console.error("Logout failed", error);
-      navigate('/admin-pin');
-    }
+    try { await fetch('/api/logout', { method: 'POST' }); navigate('/admin-pin'); } catch (error) {}
   };
 
-  // --- Handlers ---
-
+  // --- GENERIC HANDLERS ---
   const handleFileUpload = (e, setterFunc, keyName = 'image') => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (keyName === 'previewOnly') {
-            setterFunc(reader.result); 
-        } else {
-            setterFunc(prev => ({ ...prev, [keyName]: reader.result, imagePreview: reader.result }));
-        }
+        if (keyName === 'previewOnly') setterFunc(reader.result); 
+        else setterFunc(prev => ({ ...prev, [keyName]: reader.result, imagePreview: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Match Data Handlers
-  const handleUpdateMatchData = (field, value) => {
-    updateMatchData({ ...matchData, [field]: value });
-  };
-
-  const handleScoreUpdate = (team, value) => {
-    const currentScore = matchData.score || { home: 0, away: 0 };
-    const newScore = { ...currentScore, [team]: Number(value) };
-    updateMatchData({ ...matchData, score: newScore });
-  };
-
-  // Player Handlers
-  const handleEditPlayer = (player) => {
-    setEditingPlayer(player);
-    setPlayerForm({
-      name: player.name,
-      number: player.number,
-      position: player.position,
-      image: player.image,
-      imagePreview: player.image,
-      isCaptain: player.isCaptain || false,
-      isTeamLeader: player.isTeamLeader || false,
-      isTrainer: player.isTrainer || false
-    });
-    window.scrollTo(0,0);
-  };
-
-  const handleCancelEditPlayer = () => {
-    setEditingPlayer(null);
-    setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false });
-  };
-
+  // --- MATCH & PLAYER & CASE LOGIC (Beholdes likt) ---
+  const handleUpdateMatchData = (field, value) => updateMatchData({ ...matchData, [field]: value });
+  const handleScoreUpdate = (team, value) => updateMatchData({ ...matchData, score: { ...matchData.score, [team]: Number(value) } });
+  
   const handleSavePlayer = async () => {
     if (!playerForm.name || !playerForm.number) return alert('Mangler navn eller nummer');
     setLoading(true);
-    
+    const playerData = { ...playerForm, image: playerForm.imagePreview || playerForm.image || '🦁' };
     try {
-      const playerData = {
-        name: playerForm.name,
-        number: playerForm.number,
-        position: playerForm.position,
-        image: playerForm.imagePreview || playerForm.image || '🦁',
-        isCaptain: playerForm.isCaptain,
-        isTeamLeader: playerForm.isTeamLeader,
-        isTrainer: playerForm.isTrainer
-      };
-
-      if (editingPlayer) {
-        await deletePlayer(editingPlayer.id);
-        await addPlayer(playerData);
-        setEditingPlayer(null);
-        alert('Spiller oppdatert!');
-      } else {
-        await addPlayer(playerData);
-        alert('Spiller lagt til!');
-      }
-      
+      if (editingPlayer) { await deletePlayer(editingPlayer.id); await addPlayer(playerData); setEditingPlayer(null); }
+      else { await addPlayer(playerData); }
       setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false });
-      
     } catch (e) { alert(e.message); }
     setLoading(false);
   };
+  const handleEditPlayer = (p) => { setEditingPlayer(p); setPlayerForm({...p, imagePreview: p.image}); window.scrollTo(0,0); };
+  const handleCancelEditPlayer = () => { setEditingPlayer(null); setPlayerForm({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false }); };
 
-  // Match List Handlers
   const handleSaveMatch = async () => {
     if (!matchForm.opponent) return;
     setLoading(true);
     try {
-      if (editingMatch) {
-        await deleteMatch(editingMatch.id);
-        await addMatch({ ...matchForm, id: editingMatch.id });
-        setEditingMatch(null);
-      } else {
-        await addMatch(matchForm);
-      }
+      if (editingMatch) { await deleteMatch(editingMatch.id); await addMatch({ ...matchForm, id: editingMatch.id }); setEditingMatch(null); }
+      else { await addMatch(matchForm); }
       setMatchForm({ date: '', time: '', opponent: '', location: '', logo: '' });
     } catch (e) { alert(e.message); }
     setLoading(false);
   };
 
-  // Case Handlers
   const handleSaveCase = async () => {
     if (!caseForm.player) return;
     setLoading(true);
     try {
       const data = { ...caseForm, fine: Number(caseForm.fine) };
-      if (editingCase) {
-        await deleteCase(editingCase.id);
-        await addCase({ ...data, id: editingCase.id });
-        setEditingCase(null);
-      } else {
-        await addCase(data);
-      }
+      if (editingCase) { await deleteCase(editingCase.id); await addCase({ ...data, id: editingCase.id }); setEditingCase(null); }
+      else { await addCase(data); }
       setCaseForm({ player: '', reason: '', fine: '', likelihood: 0.5, round: '' });
     } catch (e) { alert(e.message); }
     setLoading(false);
   };
 
-  // MOTM Handler
   const handleSaveMotm = async () => {
     setLoading(true);
-    try {
-      await updateMotm(motmForm);
-      alert('Lagret!');
-    } catch (e) { alert(e.message); }
+    try { await updateMotm(motmForm); alert('Lagret!'); } catch (e) { alert(e.message); }
     setLoading(false);
   };
 
-  // --- CALENDAR HANDLERS (NY) ---
-  const handleSaveDoor = async () => {
-      if(!calendarForm.day || !calendarForm.player) return alert("Mangler dag eller spiller");
+  // --- TABLE LOGIC (REDESIGNET) ---
+
+  // Funksjon for å resette tabellen med data fra bildet
+  const populateTable = async () => {
+    if(!window.confirm("Er du sikker? Dette sletter nåværende tabell og legger inn standard-data.")) return;
+    setLoading(true);
+    try {
+        // Slett eksisterende
+        if(leagueTable && leagueTable.length > 0) {
+            for(let row of leagueTable) {
+                if(deleteTableRow) await deleteTableRow(row.id);
+            }
+        }
+        // Legg til lagene fra bildet
+        for(let teamData of initialTeams) {
+             const points = (teamData.won * 2) + (teamData.draw * 1);
+             const rank = 0; // Vi beregner rank ved visning, lagrer bare data
+             await addTableRow({ ...teamData, points, rank }); 
+        }
+        alert("Tabell lastet inn!");
+    } catch (e) {
+        alert("Feil: " + e.message);
+    }
+    setLoading(false);
+  };
+
+  const handleSaveTable = async () => {
+      if(!tableForm.team) return alert("Mangler lagnavn");
       setLoading(true);
       try {
-          await addToCalendar(calendarForm); // Funksjon fra Context
-          setCalendarForm({ day: '', player: '', hint: '', image: '' });
-          setEditingDoor(null);
-          alert("Luke lagret!");
-      } catch(e) { alert(e.message); }
+          // Beregn poeng automatisk: Seier=2, Uavgjort=1
+          const calculatedPoints = (Number(tableForm.won) * 2) + Number(tableForm.draw);
+          
+          const data = {
+              team: tableForm.team,
+              played: Number(tableForm.played),
+              won: Number(tableForm.won),
+              draw: Number(tableForm.draw),
+              lost: Number(tableForm.lost),
+              gf: Number(tableForm.gf),
+              ga: Number(tableForm.ga),
+              points: calculatedPoints,
+              rank: 0 // Placeholder, sortering skjer i frontend
+          };
+
+          if(editingTableRow) {
+               if(updateTableRow) await updateTableRow(editingTableRow.id, data);
+               else { await deleteTableRow(editingTableRow.id); await addTableRow(data); }
+               setEditingTableRow(null);
+          } else {
+               await addTableRow(data);
+          }
+          setTableForm({ team: '', played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0 });
+          alert("Lagret! Tabellen oppdateres automatisk.");
+      } catch(e) { 
+          alert("Feil: " + e.message); 
+      }
       setLoading(false);
   };
 
-  const handleEditDoor = (door) => {
-      setEditingDoor(door);
-      setCalendarForm(door);
+  const handleEditTable = (row) => {
+      setEditingTableRow(row);
+      setTableForm(row);
       window.scrollTo(0,0);
   };
 
-  if (authLoading) {
-    return <LoadingScreen>VERIFISERER TILGANG...</LoadingScreen>;
-  }
+  // Sorteringsfunksjon for tabellen (Poeng > Målforskjell > Mål scoret)
+  const sortedTable = leagueTable ? [...leagueTable].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      const gdA = a.gf - a.ga;
+      const gdB = b.gf - b.ga;
+      if (gdB !== gdA) return gdB - gdA;
+      return b.gf - a.gf;
+  }) : [];
 
+
+  if (authLoading) return <LoadingScreen>VERIFISERER TILGANG...</LoadingScreen>;
   if (!isAuthenticated) return null;
-
-  if (isMobile) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff', flexDirection: 'column', gap: '1rem' }}>
-        <h2>💻 Gå til PC</h2>
-        <p>Admin-panelet krever større skjerm.</p>
-        <Button onClick={() => navigate('/')}><span>Tilbake</span></Button>
-      </div>
-    );
-  }
+  if (isMobile) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}><h2>Gå til PC</h2></div>;
 
   return (
     <AdminWrapper>
@@ -724,156 +687,57 @@ function AdminPage() {
 
       <Sidebar open={sidebarOpen}>
         <Brand>Asker<span>Admin</span></Brand>
-        
         <MenuGroup>
           <MenuLabel>Dashbord</MenuLabel>
-          <MenuItem active={activeTab === 'matchData'} onClick={() => setActiveTab('matchData')}>
-            <span>⚔️</span> Dagens Kamp
-          </MenuItem>
-          <MenuItem active={activeTab === 'motm'} onClick={() => setActiveTab('motm')}>
-             <span>⭐</span> Man of the Match
-          </MenuItem>
+          <MenuItem active={activeTab === 'matchData'} onClick={() => setActiveTab('matchData')}><span>⚔️</span> Dagens Kamp</MenuItem>
+          <MenuItem active={activeTab === 'motm'} onClick={() => setActiveTab('motm')}><span>⭐</span> Man of the Match</MenuItem>
         </MenuGroup>
-
         <MenuGroup>
           <MenuLabel>Database</MenuLabel>
-          <MenuItem active={activeTab === 'players'} onClick={() => setActiveTab('players')}>
-            <span>👥</span> Spillerstall
-          </MenuItem>
-          <MenuItem active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
-            <span>📅</span> Terminliste
-          </MenuItem>
-          <MenuItem active={activeTab === 'cases'} onClick={() => setActiveTab('cases')}>
-            <span>⚖️</span> Botkassa
-          </MenuItem>
-          <MenuItem active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')}>
-            <span>🎅</span> Julekalender
-          </MenuItem>
+          <MenuItem active={activeTab === 'players'} onClick={() => setActiveTab('players')}><span>👥</span> Spillerstall</MenuItem>
+          <MenuItem active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}><span>📅</span> Terminliste</MenuItem>
+          <MenuItem active={activeTab === 'cases'} onClick={() => setActiveTab('cases')}><span>⚖️</span> Botkassa</MenuItem>
+          <MenuItem active={activeTab === 'table'} onClick={() => setActiveTab('table')}><span>📊</span> Tabell</MenuItem>
         </MenuGroup>
-
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Button onClick={handleLogout} style={{ width: '100%', fontSize: '0.8rem', background: '#222' }}>
-               <span>🔒 Logg ut</span>
-          </Button>
-          
-          <Button danger onClick={async () => {
-             if(window.confirm('SLETT ALT? Dette kan ikke angres.')) await clearAllData();
-          }} style={{ width: '100%', fontSize: '0.8rem' }}>
-              <span>🗑️ Reset Database</span>
-          </Button>
+          <Button onClick={handleLogout} style={{ width: '100%', fontSize: '0.8rem', background: '#222' }}><span>🔒 Logg ut</span></Button>
+          <Button danger onClick={async () => { if(window.confirm('SLETT ALT?')) await clearAllData(); }} style={{ width: '100%', fontSize: '0.8rem' }}><span>🗑️ Reset Database</span></Button>
         </div>
       </Sidebar>
 
       <MainContent>
         <Header>
-          <h2>
-            {activeTab === 'matchData' && 'Dagens Kamp'}
-            {activeTab === 'motm' && 'Man of the Match'}
-            {activeTab === 'players' && 'Spillerstall'}
-            {activeTab === 'matches' && 'Terminliste'}
-            {activeTab === 'cases' && 'Botkassa'}
-            {activeTab === 'calendar' && 'Julekalender'}
-          </h2>
+          <h2>{activeTab === 'table' ? 'Tabell' : 'Admin Panel'}</h2>
           <p>Endringer lagres umiddelbart i Firebase.</p>
         </Header>
 
-        {/* --- TAB: MATCH DATA (DAGENS KAMP) --- */}
+        {/* --- TAB: MATCH DATA --- */}
         {activeTab === 'matchData' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <Card>
               <CardTitle>Kamp Informasjon</CardTitle>
-              <FormGroup>
-                <Label>Hjemmelag</Label>
-                <Input value={matchData.homeTeam} onChange={e => handleUpdateMatchData('homeTeam', e.target.value)} />
-              </FormGroup>
-              <FormGroup>
-                <Label>Bortelag</Label>
-                <Input value={matchData.awayTeam} onChange={e => handleUpdateMatchData('awayTeam', e.target.value)} />
-              </FormGroup>
-              <FormGroup>
-                <Label>Live Stream Link</Label>
-                <Input value={matchData.liveLink} onChange={e => handleUpdateMatchData('liveLink', e.target.value)} />
-              </FormGroup>
+              <FormGroup><Label>Hjemmelag</Label><Input value={matchData.homeTeam} onChange={e => handleUpdateMatchData('homeTeam', e.target.value)} /></FormGroup>
+              <FormGroup><Label>Bortelag</Label><Input value={matchData.awayTeam} onChange={e => handleUpdateMatchData('awayTeam', e.target.value)} /></FormGroup>
+              <FormGroup><Label>Live Stream Link</Label><Input value={matchData.liveLink} onChange={e => handleUpdateMatchData('liveLink', e.target.value)} /></FormGroup>
             </Card>
-
             <Card>
               <CardTitle>Resultat & Status</CardTitle>
-              
               <ToggleContainer $active={matchData.isFinished}>
-                <input 
-                  type="checkbox" 
-                  checked={matchData.isFinished || false} 
-                  onChange={(e) => handleUpdateMatchData('isFinished', e.target.checked)} 
-                />
+                <input type="checkbox" checked={matchData.isFinished || false} onChange={(e) => handleUpdateMatchData('isFinished', e.target.checked)} />
                 <div className="switch"></div>
-                <span>{matchData.isFinished ? 'Kampen er ferdig (Vis Resultat)' : 'Kampen pågår / Kommende'}</span>
+                <span>{matchData.isFinished ? 'Kampen er ferdig' : 'Kampen pågår / Kommende'}</span>
               </ToggleContainer>
-
               <ScoreInputWrapper $finished={matchData.isFinished}>
-                  <FormGroup style={{marginBottom:0, flex:1, textAlign:'center'}}>
-                      <Label style={{fontSize:'1rem', color: '#fff'}}>{matchData.homeTeam || 'Hjemme'}</Label>
-                      <Input 
-                        type="number" 
-                        style={{fontSize: '2rem', textAlign:'center', height:'80px', fontWeight:'bold', color:'#ff4500'}}
-                        value={matchData.score?.home ?? 0}
-                        onChange={(e) => handleScoreUpdate('home', e.target.value)}
-                      />
-                  </FormGroup>
+                  <Input type="number" style={{fontSize: '2rem', textAlign:'center', height:'80px', fontWeight:'bold', color:'#ff4500'}} value={matchData.score?.home ?? 0} onChange={(e) => handleScoreUpdate('home', e.target.value)} />
                   <span style={{fontSize:'2rem', fontWeight:'900', color:'#444'}}>-</span>
-                  <FormGroup style={{marginBottom:0, flex:1, textAlign:'center'}}>
-                      <Label style={{fontSize:'1rem', color: '#fff'}}>{matchData.awayTeam || 'Borte'}</Label>
-                      <Input 
-                        type="number" 
-                        style={{fontSize: '2rem', textAlign:'center', height:'80px', fontWeight:'bold', color:'#fff'}}
-                        value={matchData.score?.away ?? 0}
-                        onChange={(e) => handleScoreUpdate('away', e.target.value)}
-                      />
-                  </FormGroup>
+                  <Input type="number" style={{fontSize: '2rem', textAlign:'center', height:'80px', fontWeight:'bold', color:'#fff'}} value={matchData.score?.away ?? 0} onChange={(e) => handleScoreUpdate('away', e.target.value)} />
               </ScoreInputWrapper>
-              
-              <p style={{marginTop: '1rem', color: '#666', fontSize: '0.8rem'}}>
-                  * Vinneren markeres automatisk basert på scoren. Ved seier vises "3 Poeng" på forsiden.
-              </p>
             </Card>
-
             <Card style={{gridColumn: '1 / -1'}}>
               <CardTitle>Logoer</CardTitle>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                <FormGroup>
-                  <Label>Hjemmelag Logo</Label>
-                  <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
-                      <div style={{flex: 1}}>
-                           <Input 
-                             type="file" 
-                             accept="image/*" 
-                             onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('homeLogo', val), 'previewOnly')} 
-                           />
-                           <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
-                           <Input value={matchData.homeLogo} onChange={e => handleUpdateMatchData('homeLogo', e.target.value)} placeholder="URL..." />
-                      </div>
-                      <PreviewBox>
-                          {matchData.homeLogo ? <img src={matchData.homeLogo} alt="Home" /> : <span>Ingen</span>}
-                      </PreviewBox>
-                  </div>
-                </FormGroup>
-
-                <FormGroup>
-                  <Label>Bortelag Logo</Label>
-                  <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
-                      <div style={{flex: 1}}>
-                           <Input 
-                             type="file" 
-                             accept="image/*" 
-                             onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('awayLogo', val), 'previewOnly')} 
-                           />
-                           <p style={{fontSize:'0.7rem', color:'#666', marginTop:'5px'}}>Eller URL:</p>
-                           <Input value={matchData.awayLogo} onChange={e => handleUpdateMatchData('awayLogo', e.target.value)} placeholder="URL..." />
-                      </div>
-                      <PreviewBox>
-                          {matchData.awayLogo ? <img src={matchData.awayLogo} alt="Away" /> : <span>Ingen</span>}
-                      </PreviewBox>
-                  </div>
-                </FormGroup>
+                <FormGroup><Label>Hjemme Logo</Label><Input type="file" onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('homeLogo', val), 'previewOnly')} /><Input value={matchData.homeLogo} onChange={e => handleUpdateMatchData('homeLogo', e.target.value)} placeholder="URL..." /></FormGroup>
+                <FormGroup><Label>Borte Logo</Label><Input type="file" onChange={(e) => handleFileUpload(e, (val) => handleUpdateMatchData('awayLogo', val), 'previewOnly')} /><Input value={matchData.awayLogo} onChange={e => handleUpdateMatchData('awayLogo', e.target.value)} placeholder="URL..." /></FormGroup>
               </div>
             </Card>
           </div>
@@ -885,96 +749,25 @@ function AdminPage() {
             <Card>
               <CardTitle>{editingPlayer ? 'Rediger Spiller' : 'Ny Spiller'}</CardTitle>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                <FormGroup>
-                    <Label>Navn</Label>
-                    <Input value={playerForm.name} onChange={e => setPlayerForm({...playerForm, name: e.target.value})} placeholder="Navn..." />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Nummer</Label>
-                    <Input type="number" value={playerForm.number} onChange={e => setPlayerForm({...playerForm, number: e.target.value})} placeholder="#" />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Posisjon</Label>
-                    <Input value={playerForm.position} onChange={e => setPlayerForm({...playerForm, position: e.target.value})} placeholder="Posisjon..." />
-                </FormGroup>
+                <FormGroup><Label>Navn</Label><Input value={playerForm.name} onChange={e => setPlayerForm({...playerForm, name: e.target.value})} /></FormGroup>
+                <FormGroup><Label>Nummer</Label><Input type="number" value={playerForm.number} onChange={e => setPlayerForm({...playerForm, number: e.target.value})} /></FormGroup>
+                <FormGroup><Label>Posisjon</Label><Input value={playerForm.position} onChange={e => setPlayerForm({...playerForm, position: e.target.value})} /></FormGroup>
               </div>
-              
               <div style={{display: 'flex', gap: '2rem', marginBottom: '1.5rem'}}>
-                <ToggleContainer $active={playerForm.isCaptain}>
-                  <input 
-                    type="checkbox" 
-                    checked={playerForm.isCaptain} 
-                    onChange={(e) => setPlayerForm({...playerForm, isCaptain: e.target.checked})} 
-                  />
-                  <div className="switch"></div>
-                  <span>Kaptein </span>
-                </ToggleContainer>
-
-                <ToggleContainer $active={playerForm.isTeamLeader}>
-                  <input 
-                    type="checkbox" 
-                    checked={playerForm.isTeamLeader} 
-                    onChange={(e) => setPlayerForm({...playerForm, isTeamLeader: e.target.checked})} 
-                  />
-                  <div className="switch"></div>
-                  <span>Lagleder</span>
-                </ToggleContainer>
-
-                <ToggleContainer $active={playerForm.isTrainer}>
-                  <input 
-                    type="checkbox" 
-                    checked={playerForm.isTrainer} 
-                    onChange={(e) => setPlayerForm({...playerForm, isTrainer: e.target.checked})} 
-                  />
-                  <div className="switch"></div>
-                  <span>Trener</span>
-                </ToggleContainer>
+                <ToggleContainer $active={playerForm.isCaptain}><input type="checkbox" checked={playerForm.isCaptain} onChange={(e) => setPlayerForm({...playerForm, isCaptain: e.target.checked})} /><div className="switch"></div><span>Kaptein</span></ToggleContainer>
+                <ToggleContainer $active={playerForm.isTeamLeader}><input type="checkbox" checked={playerForm.isTeamLeader} onChange={(e) => setPlayerForm({...playerForm, isTeamLeader: e.target.checked})} /><div className="switch"></div><span>Lagleder</span></ToggleContainer>
+                <ToggleContainer $active={playerForm.isTrainer}><input type="checkbox" checked={playerForm.isTrainer} onChange={(e) => setPlayerForm({...playerForm, isTrainer: e.target.checked})} /><div className="switch"></div><span>Trener</span></ToggleContainer>
               </div>
-
-              <FormGroup>
-                 <Label>Spillerbilde</Label>
-                 <UploadBox>
-                    <input type="file" hidden onChange={(e) => handleFileUpload(e, setPlayerForm, 'imagePreview')} />
-                    <span>📸 Last opp bilde</span>
-                 </UploadBox>
-                 {playerForm.imagePreview && (
-                    <PreviewBox style={{marginTop: '1rem'}}>
-                        <img src={playerForm.imagePreview} alt="Preview" />
-                    </PreviewBox>
-                 )}
-              </FormGroup>
-              
-              <div style={{display:'flex', gap:'1rem'}}>
-                  <Button onClick={handleSavePlayer} disabled={loading}>
-                      <span>{loading ? 'Lagrer...' : (editingPlayer ? 'Oppdater Spiller' : 'Legg til Spiller')}</span>
-                  </Button>
-                  {editingPlayer && (
-                      <Button danger onClick={handleCancelEditPlayer}><span>Avbryt</span></Button>
-                  )}
-              </div>
+              <FormGroup><Label>Spillerbilde</Label><UploadBox><input type="file" hidden onChange={(e) => handleFileUpload(e, setPlayerForm, 'imagePreview')} /><span>📸 Last opp bilde</span></UploadBox>{playerForm.imagePreview && <PreviewBox style={{marginTop: '1rem'}}><img src={playerForm.imagePreview} alt="Preview" /></PreviewBox>}</FormGroup>
+              <div style={{display:'flex', gap:'1rem'}}><Button onClick={handleSavePlayer} disabled={loading}><span>{loading ? 'Lagrer...' : (editingPlayer ? 'Oppdater' : 'Legg til')}</span></Button>{editingPlayer && <Button danger onClick={handleCancelEditPlayer}><span>Avbryt</span></Button>}</div>
             </Card>
-
-            <h3 style={{marginTop:'3rem', marginBottom:'1rem', textTransform:'uppercase'}}>Spillere i troppen ({players.length})</h3>
             <Grid>
               {players.map(p => (
                 <ItemCard key={p.id}>
-                  <div className="img-wrapper">
-                    {p.image && p.image.length > 10 ? <img src={p.image} alt={p.name} /> : <span className="placeholder">🦁</span>}
-                  </div>
+                  <div className="img-wrapper">{p.image && p.image.length > 10 ? <img src={p.image} alt={p.name} /> : <span className="placeholder">🦁</span>}</div>
                   <div className="content">
-                    <h4>{p.name}</h4>
-                    <p>#{p.number} • {p.position}</p>
-                    
-                    <div style={{marginBottom:'1rem', display:'flex', gap:'0.5rem'}}>
-                        {p.isCaptain && <span style={{fontSize:'0.7rem', background:'#ff4500', padding:'2px 6px', color:'black', fontWeight:'bold'}}>KAPTEIN</span>}
-                        {p.isTeamLeader && <span style={{fontSize:'0.7rem', background:'#fff', padding:'2px 6px', color:'black', fontWeight:'bold'}}>LAGLEDER</span>}
-                        {p.isTrainer && <span style={{fontSize:'0.7rem', background:'#1e40af', padding:'2px 6px', color:'white', fontWeight:'bold'}}>TRENER</span>}
-                    </div>
-
-                    <div className="actions">
-                        <SmallBtn onClick={() => handleEditPlayer(p)}><span>Rediger</span></SmallBtn>
-                        <SmallBtn danger onClick={() => deletePlayer(p.id)}><span>Slett</span></SmallBtn>
-                    </div>
+                    <h4>{p.name}</h4><p>#{p.number} • {p.position}</p>
+                    <div className="actions"><SmallBtn onClick={() => handleEditPlayer(p)}><span>Rediger</span></SmallBtn><SmallBtn danger onClick={() => deletePlayer(p.id)}><span>Slett</span></SmallBtn></div>
                   </div>
                 </ItemCard>
               ))}
@@ -986,46 +779,14 @@ function AdminPage() {
         {activeTab === 'motm' && (
           <Card>
               <CardTitle>Oppdater MOTM Kortet</CardTitle>
-              <FormGroup>
-                <Label>Velg fra liste (Fyller ut automatisk)</Label>
-                <Select onChange={(e) => {
-                  const p = players.find(pl => pl.name === e.target.value);
-                  if(p) setMotmForm({...motmForm, player: p.name, number: p.number, position: p.position});
-                }}>
-                  <option>Velg spiller...</option>
-                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                </Select>
-              </FormGroup>
+              <FormGroup><Label>Velg fra liste</Label><Select onChange={(e) => { const p = players.find(pl => pl.name === e.target.value); if(p) setMotmForm({...motmForm, player: p.name, number: p.number, position: p.position}); }}><option>Velg spiller...</option>{players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</Select></FormGroup>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <FormGroup>
-                    <Label>Navn</Label>
-                    <Input value={motmForm.player} onChange={e => setMotmForm({...motmForm, player: e.target.value})} />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Mål</Label>
-                    <Input type="number" value={motmForm.goals} onChange={e => setMotmForm({...motmForm, goals: Number(e.target.value)})} />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Reddninger</Label>
-                    <Input type="number" value={motmForm.saves} onChange={e => setMotmForm({...motmForm, saves: Number(e.target.value)})} />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Runde</Label>
-                    <Input value={motmForm.round} onChange={e => setMotmForm({...motmForm, round: e.target.value})} />
-                </FormGroup>
+                <FormGroup><Label>Navn</Label><Input value={motmForm.player} onChange={e => setMotmForm({...motmForm, player: e.target.value})} /></FormGroup>
+                <FormGroup><Label>Mål</Label><Input type="number" value={motmForm.goals} onChange={e => setMotmForm({...motmForm, goals: Number(e.target.value)})} /></FormGroup>
+                <FormGroup><Label>Reddninger</Label><Input type="number" value={motmForm.saves} onChange={e => setMotmForm({...motmForm, saves: Number(e.target.value)})} /></FormGroup>
+                <FormGroup><Label>Runde</Label><Input value={motmForm.round} onChange={e => setMotmForm({...motmForm, round: e.target.value})} /></FormGroup>
              </div>
-             <FormGroup>
-                <Label>Bilde (Override)</Label>
-                <UploadBox>
-                    <input type="file" hidden onChange={(e) => handleFileUpload(e, setMotmForm, 'image')} />
-                    <span>📸 Last opp nytt bilde</span>
-                </UploadBox>
-                {motmForm.image && motmForm.image.length > 20 && (
-                      <PreviewBox>
-                          <img src={motmForm.image} alt="Preview" />
-                      </PreviewBox>
-                )}
-             </FormGroup>
+             <FormGroup><Label>Bilde</Label><UploadBox><input type="file" hidden onChange={(e) => handleFileUpload(e, setMotmForm, 'image')} /><span>📸 Nytt bilde</span></UploadBox></FormGroup>
              <Button onClick={handleSaveMotm}><span>Publiser MOTM</span></Button>
           </Card>
         )}
@@ -1038,37 +799,20 @@ function AdminPage() {
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                   <FormGroup><Label>Dato</Label><Input type="date" value={matchForm.date} onChange={e => setMatchForm({...matchForm, date: e.target.value})} /></FormGroup>
                   <FormGroup><Label>Tid</Label><Input type="time" value={matchForm.time} onChange={e => setMatchForm({...matchForm, time: e.target.value})} /></FormGroup>
-                  <FormGroup><Label>Motstander</Label><Input value={matchForm.opponent} onChange={e => setMatchForm({...matchForm, opponent: e.target.value})} placeholder="Lagnavn" /></FormGroup>
-                  <FormGroup><Label>Sted</Label><Input value={matchForm.location} onChange={e => setMatchForm({...matchForm, location: e.target.value})} placeholder="Arena" /></FormGroup>
+                  <FormGroup><Label>Motstander</Label><Input value={matchForm.opponent} onChange={e => setMatchForm({...matchForm, opponent: e.target.value})} /></FormGroup>
+                  <FormGroup><Label>Sted</Label><Input value={matchForm.location} onChange={e => setMatchForm({...matchForm, location: e.target.value})} /></FormGroup>
                </div>
-               <FormGroup>
-                 <Label>Motstander Logo (URL)</Label>
-                 <Input value={matchForm.logo} onChange={e => setMatchForm({...matchForm, logo: e.target.value})} placeholder="https://..." />
-               </FormGroup>
-               <div style={{display:'flex', gap:'1rem'}}>
-                  <Button onClick={handleSaveMatch}><span>{editingMatch ? 'Oppdater' : 'Legg til'}</span></Button>
-                  {editingMatch && <Button danger onClick={() => {setEditingMatch(null); setMatchForm({date:'', time:'', opponent:'', location:'', logo:''})}}><span>Avbryt</span></Button>}
-               </div>
+               <FormGroup><Label>Motstander Logo (URL)</Label><Input value={matchForm.logo} onChange={e => setMatchForm({...matchForm, logo: e.target.value})} /></FormGroup>
+               <div style={{display:'flex', gap:'1rem'}}><Button onClick={handleSaveMatch}><span>{editingMatch ? 'Oppdater' : 'Legg til'}</span></Button>{editingMatch && <Button danger onClick={() => {setEditingMatch(null); setMatchForm({date:'', time:'', opponent:'', location:'', logo:''})}}><span>Avbryt</span></Button>}</div>
              </Card>
-             
              <Card>
-                <CardTitle>Kommende Kamper</CardTitle>
-                {matches.map(m => (
-                    <ListRow key={m.id}>
-                        <div className="info">
-                            <span style={{color:'#ff4500'}}>{m.date}</span> - {m.opponent}
-                        </div>
-                        <div className="actions">
-                            <SmallBtn onClick={() => {setEditingMatch(m); setMatchForm(m); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn>
-                            <SmallBtn danger onClick={() => deleteMatch(m.id)}><span>Slett</span></SmallBtn>
-                        </div>
-                    </ListRow>
-                ))}
+                <CardTitle>Terminliste</CardTitle>
+                {matches.map(m => (<ListRow key={m.id}><div className="info"><span style={{color:'#ff4500'}}>{m.date}</span> - {m.opponent}</div><div className="actions"><SmallBtn onClick={() => {setEditingMatch(m); setMatchForm(m); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn><SmallBtn danger onClick={() => deleteMatch(m.id)}><span>Slett</span></SmallBtn></div></ListRow>))}
              </Card>
            </>
         )}
 
-        {/* --- TAB: CASES (BOTKASSA) --- */}
+        {/* --- TAB: CASES --- */}
         {activeTab === 'cases' && (
            <>
             <Card>
@@ -1077,100 +821,83 @@ function AdminPage() {
                     <FormGroup><Label>Spiller</Label><Input value={caseForm.player} onChange={e => setCaseForm({...caseForm, player: e.target.value})} /></FormGroup>
                     <FormGroup><Label>Årsak</Label><Input value={caseForm.reason} onChange={e => setCaseForm({...caseForm, reason: e.target.value})} /></FormGroup>
                     <FormGroup><Label>Bot (kr)</Label><Input type="number" value={caseForm.fine} onChange={e => setCaseForm({...caseForm, fine: e.target.value})} /></FormGroup>
-                    <FormGroup>
-                        <Label>Sannsynlighet ({Math.round(caseForm.likelihood * 100)}%)</Label>
-                        <input type="range" min="0" max="100" style={{width:'100%'}} value={caseForm.likelihood * 100} onChange={e => setCaseForm({...caseForm, likelihood: e.target.value / 100})} />
-                    </FormGroup>
+                    <FormGroup><Label>Sannsynlighet</Label><input type="range" min="0" max="100" style={{width:'100%'}} value={caseForm.likelihood * 100} onChange={e => setCaseForm({...caseForm, likelihood: e.target.value / 100})} /></FormGroup>
                 </div>
-                <div style={{display:'flex', gap:'1rem'}}>
-                  <Button onClick={handleSaveCase}><span>{editingCase ? 'Oppdater' : 'Legg til'}</span></Button>
-                  {editingCase && <Button danger onClick={() => {setEditingCase(null); setCaseForm({player:'', reason:'', fine:'', likelihood:0.5, round:''})}}><span>Avbryt</span></Button>}
-                </div>
+                <div style={{display:'flex', gap:'1rem'}}><Button onClick={handleSaveCase}><span>{editingCase ? 'Oppdater' : 'Legg til'}</span></Button>{editingCase && <Button danger onClick={() => {setEditingCase(null); setCaseForm({player:'', reason:'', fine:'', likelihood:0.5, round:''})}}><span>Avbryt</span></Button>}</div>
             </Card>
-
             <Card>
                 <CardTitle>Saker</CardTitle>
-                {cases.map(c => (
-                    <ListRow key={c.id}>
-                        <div className="info">
-                            {c.player} - {c.reason} ({c.fine} kr)
-                        </div>
-                        <div className="actions">
-                            <SmallBtn onClick={() => {setEditingCase(c); setCaseForm(c); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn>
-                            <SmallBtn danger onClick={() => deleteCase(c.id)}><span>Slett</span></SmallBtn>
-                        </div>
-                    </ListRow>
-                ))}
+                {cases.map(c => (<ListRow key={c.id}><div className="info">{c.player} - {c.reason} ({c.fine} kr)</div><div className="actions"><SmallBtn onClick={() => {setEditingCase(c); setCaseForm(c); window.scrollTo(0,0)}}><span>Rediger</span></SmallBtn><SmallBtn danger onClick={() => deleteCase(c.id)}><span>Slett</span></SmallBtn></div></ListRow>))}
             </Card>
            </>
         )}
 
-        {/* --- TAB: CALENDAR (JULEKALENDER) --- */}
-        {activeTab === 'calendar' && (
+        {/* --- TAB: TABLE (AUTOMATISK SORTERING & POENG) --- */}
+        {activeTab === 'table' && (
            <>
             <Card>
-                <CardTitle>{editingDoor ? `Rediger Luke ${editingDoor.day}` : 'Ny Julekalender Luke'}</CardTitle>
-                
-                {/* VELG SPILLER FOR AUTOFYLL */}
-                <FormGroup>
-                    <Label>Autofyll fra spillerliste</Label>
-                    <Select onChange={(e) => {
-                        const p = players.find(pl => pl.name === e.target.value);
-                        if(p) setCalendarForm(prev => ({...prev, player: p.name, image: p.image}));
-                    }}>
-                        <option>Velg spiller...</option>
-                        {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                    </Select>
-                </FormGroup>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
-                    <FormGroup>
-                        <Label>Luke # (Dag)</Label>
-                        <Input type="number" min="1" max="24" value={calendarForm.day} onChange={e => setCalendarForm({...calendarForm, day: e.target.value})} placeholder="1-24" />
+                <CardTitle>{editingTableRow ? `Rediger: ${editingTableRow.team}` : 'Legg til lag'}</CardTitle>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px 60px 80px 80px', gap: '0.8rem', alignItems: 'end' }}>
+                    
+                    {/* LAGNAVN */}
+                    <FormGroup style={{marginBottom:0}}>
+                        <Label>Lagnavn</Label>
+                        <Input value={tableForm.team} onChange={e => setTableForm({...tableForm, team: e.target.value})} />
                     </FormGroup>
-                    <FormGroup>
-                        <Label>Spiller Navn</Label>
-                        <Input value={calendarForm.player} onChange={e => setCalendarForm({...calendarForm, player: e.target.value})} placeholder="Navn..." />
-                    </FormGroup>
+                    
+                    {/* STATS */}
+                    <FormGroup style={{marginBottom:0}}><Label>K</Label><Input type="number" value={tableForm.played} onChange={e => setTableForm({...tableForm, played: e.target.value})} /></FormGroup>
+                    <FormGroup style={{marginBottom:0}}><Label>V</Label><Input type="number" value={tableForm.won} onChange={e => setTableForm({...tableForm, won: e.target.value})} /></FormGroup>
+                    <FormGroup style={{marginBottom:0}}><Label>U</Label><Input type="number" value={tableForm.draw} onChange={e => setTableForm({...tableForm, draw: e.target.value})} /></FormGroup>
+                    <FormGroup style={{marginBottom:0}}><Label>T</Label><Input type="number" value={tableForm.lost} onChange={e => setTableForm({...tableForm, lost: e.target.value})} /></FormGroup>
+                    
+                    {/* MÅL */}
+                    <FormGroup style={{marginBottom:0}}><Label>Mål+</Label><Input type="number" value={tableForm.gf} onChange={e => setTableForm({...tableForm, gf: e.target.value})} /></FormGroup>
+                    <FormGroup style={{marginBottom:0}}><Label>Mål-</Label><Input type="number" value={tableForm.ga} onChange={e => setTableForm({...tableForm, ga: e.target.value})} /></FormGroup>
                 </div>
-                <FormGroup>
-                    <Label>Hint til brukeren</Label>
-                    <Input value={calendarForm.hint} onChange={e => setCalendarForm({...calendarForm, hint: e.target.value})} placeholder="F.eks: Draktnummer 10..." />
-                </FormGroup>
 
-                <FormGroup>
-                    <Label>Bilde (Blir automatisk sort silhuett på forsiden)</Label>
-                    <UploadBox>
-                        <input type="file" hidden onChange={(e) => handleFileUpload(e, setCalendarForm, 'image')} />
-                        <span>📸 Last opp bilde</span>
-                    </UploadBox>
-                    {calendarForm.image && (
-                        <PreviewBox style={{marginTop: '1rem'}}>
-                            <img src={calendarForm.image} alt="Preview" />
-                        </PreviewBox>
-                    )}
-                </FormGroup>
-
-                <div style={{display:'flex', gap:'1rem'}}>
-                  <Button onClick={handleSaveDoor} disabled={loading}>
-                      <span>{loading ? 'Lagrer...' : (editingDoor ? 'Oppdater Luke' : 'Legg til Luke')}</span>
-                  </Button>
-                  {editingDoor && <Button danger onClick={() => {setEditingDoor(null); setCalendarForm({day:'', player:'', hint:'', image:''})}}><span>Avbryt</span></Button>}
+                <div style={{marginTop: '1rem', color: '#888', fontStyle:'italic', fontSize:'0.9rem'}}>
+                    * Poeng beregnes automatisk (2p for seier). Plassering justeres automatisk.
+                </div>
+                
+                <div style={{display:'flex', gap:'1rem', marginTop:'1.5rem'}}>
+                  <Button onClick={handleSaveTable}><span>{editingTableRow ? 'Oppdater Lag' : 'Legg til Lag'}</span></Button>
+                  {editingTableRow && <Button danger onClick={() => {setEditingTableRow(null); setTableForm({ team: '', played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0 })}}><span>Avbryt</span></Button>}
                 </div>
             </Card>
 
             <Card>
-                <CardTitle>Oversikt Luker ({calendarData ? calendarData.length : 0})</CardTitle>
-                {/* Sorter lukene etter dag */}
-                {calendarData && [...calendarData].sort((a,b) => a.day - b.day).map(d => (
-                    <ListRow key={d.day}>
-                        <div className="info">
-                            <span style={{color:'#ff4500', marginRight:'10px', fontSize:'1.2rem'}}>#{d.day}</span> 
-                            {d.player} <span style={{color:'#666', fontSize:'0.8rem', marginLeft:'10px'}}>({d.hint})</span>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem'}}>
+                   <CardTitle style={{margin:0}}>Nåværende Tabell</CardTitle>
+                   <Button danger onClick={populateTable} style={{fontSize:'0.8rem', padding:'0.5rem 1rem'}}>
+                       <span>⚠️ Last inn standardtabell</span>
+                   </Button>
+                </div>
+
+                {/* Header Row */}
+                <ListRow style={{background:'#0a0a0a', borderBottom:'2px solid #333', color:'#888', fontSize:'0.8rem'}}>
+                    <div className="info" style={{width:'100%', display:'grid', gridTemplateColumns: '40px 1fr 40px 40px 40px 40px 100px 50px', gap: '10px'}}>
+                        <span>#</span><span>Lag</span><span>K</span><span>V</span><span>U</span><span>T</span><span>Mål</span><span>P</span>
+                    </div>
+                    <div style={{width:'140px'}}>Handling</div>
+                </ListRow>
+
+                {/* Data Rows (Sorted) */}
+                {sortedTable.map((row, index) => (
+                    <ListRow key={row.id}>
+                        <div className="info" style={{width:'100%', display:'grid', gridTemplateColumns: '40px 1fr 40px 40px 40px 40px 100px 50px', gap: '10px'}}>
+                            <span style={{color: '#ff4500', fontWeight:'900'}}>{index + 1}.</span>
+                            <span style={{fontWeight: row.team === 'Asker/Gui' ? '900' : 'normal', color: row.team === 'Asker/Gui' ? '#ff4500' : 'inherit'}}>{row.team}</span>
+                            <span>{row.played}</span>
+                            <span>{row.won}</span>
+                            <span>{row.draw}</span>
+                            <span>{row.lost}</span>
+                            <span>{row.gf} - {row.ga}</span>
+                            <span style={{color: '#fff', fontWeight:'900'}}>{row.points}</span>
                         </div>
                         <div className="actions">
-                            <SmallBtn onClick={() => handleEditDoor(d)}><span>Rediger</span></SmallBtn>
-                            <SmallBtn danger onClick={() => deleteFromCalendar(d.day)}><span>Slett</span></SmallBtn>
+                            <SmallBtn onClick={() => handleEditTable(row)}><span>Rediger</span></SmallBtn>
+                            <SmallBtn danger onClick={() => deleteTableRow(row.id)}><span>Slett</span></SmallBtn>
                         </div>
                     </ListRow>
                 ))}

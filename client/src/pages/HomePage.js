@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
@@ -21,12 +21,6 @@ const slam = keyframes`
   60% { transform: scale(0.8) rotate(-15deg); opacity: 1; }
   80% { transform: scale(1.1) rotate(-15deg); }
   100% { transform: scale(1) rotate(-15deg); }
-`;
-
-const snow = keyframes`
-  0% { transform: translateY(-10vh); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translateY(100vh); opacity: 0.2; }
 `;
 
 // --- Styled Components ---
@@ -444,6 +438,97 @@ const LiveBtn = styled.a`
   }
 `;
 
+// --- TABLE SECTION STYLES ---
+
+const TableSection = styled.section`
+  padding: 4rem 2rem;
+  background: linear-gradient(180deg, rgba(5,5,5,0.8) 0%, rgba(15,15,15,0.95) 50%, rgba(5,5,5,0.8) 100%);
+  position: relative;
+  z-index: 2;
+  
+  @media (max-width: 768px) {
+    padding: 3rem 1rem;
+  }
+`;
+
+const TableWrapper = styled.div`
+  max-width: 1000px;
+  margin: 0 auto;
+  overflow-x: auto;
+  border: 1px solid #333;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  
+  /* Tilpass scrollbar for chrome/safari */
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #111;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+  }
+`;
+
+const StyledTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  background: #0a0a0a;
+  color: white;
+  font-size: 1rem;
+  text-transform: uppercase;
+  
+  thead {
+    background: #1a1a1a;
+    th {
+      padding: 1rem;
+      text-align: center;
+      font-weight: 900;
+      color: #888;
+      font-style: italic;
+      border-bottom: 2px solid #333;
+    }
+    th:nth-child(2) { text-align: left; } /* Lag-navn venstrejustert */
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #222;
+    transition: background 0.2s;
+    
+    &:hover {
+      background: #111;
+    }
+  }
+
+  td {
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+  }
+  td:nth-child(2) { 
+    text-align: left; 
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+`;
+
+const TableRow = styled.tr`
+  ${props => props.$isHomeTeam && css`
+    background: rgba(255, 69, 0, 0.1) !important;
+    border-left: 4px solid #ff4500;
+    
+    td {
+      color: white; 
+      text-shadow: 0 0 10px rgba(255, 69, 0, 0.4);
+    }
+    td:nth-child(2) {
+      color: #ff4500;
+    }
+  `}
+`;
+
+
 // --- Man of the Match STYLES ---
 
 const MotmSection = styled.section`
@@ -566,196 +651,7 @@ const StatItem = styled.div`
   .lbl { font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: 700; margin-top: 5px; }
 `;
 
-// --- JULEKALENDER STYLES ---
-
-const CalendarSection = styled.section`
-  padding: 10rem 2rem 4rem 2rem;
-  background: linear-gradient(180deg, #050505 0%, #101010 50%, #050505 100%);
-  position: relative;
-  z-index: 5;
-  overflow: hidden;
-
-  /* Snø-effekt bakgrunn */
-  &::before {
-    content: '❄';
-    position: absolute;
-    top: -5vh;
-    left: 10%;
-    color: rgba(255,255,255,0.1);
-    font-size: 2rem;
-    animation: ${snow} 10s linear infinite;
-  }
-  &::after {
-    content: '❄';
-    position: absolute;
-    top: -5vh;
-    left: 80%;
-    color: rgba(255,255,255,0.1);
-    font-size: 1.5rem;
-    animation: ${snow} 7s linear infinite 2s;
-  }
-`;
-
-const CalendarHeader = styled(SectionHeader)`
-  margin-bottom: 3rem;
-  span { color: #ff4500; }
-  p {
-    font-size: 1rem;
-    color: #888;
-    margin-top: 0.5rem;
-    font-style: normal;
-    font-weight: 600;
-  }
-`;
-
-const CalendarGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 1.5rem;
-  max-width: 1000px;
-  margin: 0 auto;
-`;
-
-const CalendarDoor = styled.div`
-  aspect-ratio: 1;
-  background: ${props => props.$isOpen ? '#ff4500' : '#1a1a1a'};
-  border: 2px solid ${props => props.$isOpen ? '#ff4500' : '#333'};
-  color: ${props => props.$isOpen ? 'black' : 'white'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 900;
-  cursor: ${props => props.$isLocked ? 'not-allowed' : 'pointer'};
-  opacity: ${props => props.$isLocked ? 0.4 : 1};
-  position: relative;
-  transition: all 0.3s ease;
-  transform: skew(-5deg);
-
-  &:hover {
-    transform: ${props => !props.$isLocked ? 'skew(-5deg) scale(1.1)' : 'skew(-5deg)'};
-    box-shadow: ${props => !props.$isLocked ? '0 0 20px rgba(255, 69, 0, 0.4)' : 'none'};
-    border-color: ${props => !props.$isLocked ? '#ff4500' : '#333'};
-  }
-
-  &::after {
-    content: '${props => props.$isLocked ? '🔒' : (props.$isOpen ? '✅' : '')}';
-    position: absolute;
-    font-size: 1rem;
-    bottom: 5px;
-    right: 5px;
-  }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.9);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-`;
-
-const ModalContent = styled.div`
-  background: #111;
-  border: 2px solid #ff4500;
-  padding: 2rem;
-  max-width: 500px;
-  width: 100%;
-  text-align: center;
-  position: relative;
-  box-shadow: 0 0 50px rgba(255,69,0,0.3);
-  transform: skew(-2deg);
-
-  h3 {
-    font-size: 2rem;
-    text-transform: uppercase;
-    color: white;
-    margin-bottom: 1.5rem;
-    font-style: italic;
-    font-weight: 900;
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: #666;
-    font-size: 1.5rem;
-    cursor: pointer;
-    &:hover { color: white; }
-  }
-`;
-
-const MysteryImageContainer = styled.div`
-  width: 100%;
-  height: 300px;
-  background: radial-gradient(circle, #333 0%, #000 70%);
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #333;
-  overflow: hidden;
-  position: relative;
-`;
-
-const MysteryImage = styled.img`
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
-  filter: ${props => props.$isRevealed ? 'none' : 'brightness(0)'};
-  filter: ${props => props.$isRevealed ? 'none' : 'brightness(0) drop-shadow(0 0 5px rgba(255,255,255,0.2))'};
-  transition: filter 1.5s ease-in-out;
-  pointer-events: none;
-`;
-
-const GuessInput = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-
-  input {
-    background: #050505;
-    border: 1px solid #333;
-    padding: 1rem;
-    color: white;
-    font-size: 1.1rem;
-    font-family: inherit;
-    text-align: center;
-    &:focus { outline: 2px solid #ff4500; border-color: transparent; }
-  }
-
-  button {
-    background: #ff4500;
-    color: white;
-    border: none;
-    padding: 1rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: 0.2s;
-    &:hover { background: #ff5714; }
-  }
-
-  .hint-text {
-    color: #888;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-  }
-  
-  .feedback {
-    margin-top: 1rem;
-    font-weight: bold;
-    font-size: 1.2rem;
-  }
-  .correct { color: #4caf50; }
-  .wrong { color: #f44336; }
-`;
+// --- Features Section STYLES ---
 
 const FeaturesSection = styled.section`
   padding: 4rem 2rem;
@@ -835,26 +731,10 @@ const StatsContent = styled.div`
 `;
 
 function HomePage() {
-  const { motm, matchData, calendarData } = useContext(DataContext);
+  const { motm, matchData } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   const teamImage = '/images/gutta.png'; 
   
-  // --- LOCALSTORAGE LOGIC FOR PROGRESS (PER PERSON) ---
-  const [activeDoor, setActiveDoor] = useState(null); 
-  const [guess, setGuess] = useState('');
-  const [feedback, setFeedback] = useState(null);
-  
-  // Henter lagret fremdrift, eller starter med tom liste
-  const [openedDoors, setOpenedDoors] = useState(() => {
-    const saved = localStorage.getItem('calendar_progress');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Lagrer fremdrift automatisk når 'openedDoors' endres
-  useEffect(() => {
-    localStorage.setItem('calendar_progress', JSON.stringify(openedDoors));
-  }, [openedDoors]);
-
   const currentMatch = {
     homeTeam: 'Asker',
     awayTeam: 'HSIL', 
@@ -875,66 +755,19 @@ function HomePage() {
     return '0 POENG'; 
   };
 
-  const isCorrectGuess = (guess, answer) => {
-    if (!guess || !answer) return false;
-    const cleanGuess = guess.toLowerCase().trim();
-    const cleanAnswer = answer.toLowerCase().trim();
-    if (cleanGuess === cleanAnswer) return true;
-    const answerParts = cleanAnswer.split(' ');
-    return answerParts.some(part => part === cleanGuess);
-  };
-
-  const handleDoorClick = (day) => {
-    const today = new Date();
-    // FOR TESTING: 
-    // const currentDay = 25; 
-    const currentDay = today.getDate();
-    const currentMonth = today.getMonth(); 
-
-    if (day !== currentDay || currentMonth !== 11) {
-        if (currentMonth !== 11) {
-            alert("Det er ikke desember enda! Kom tilbake senere. 🎅");
-            return;
-        }
-        if (day < currentDay) {
-            alert("Denne luken er forbi! Du kan bare åpne dagens luke. 🔒");
-            return;
-        }
-        if (day > currentDay) {
-            alert("Hold hestene! Du kan ikke åpne luker frem i tid. 🚫");
-            return;
-        }
-    }
-
-    const doorData = calendarData && calendarData.find(d => Number(d.day) === day);
-    if (!doorData) {
-        alert("Ingen innhold i denne luken enda. Admin må legge det inn! 🦁");
-        return;
-    }
-
-    setActiveDoor(doorData);
-    setGuess('');
-    setFeedback(null);
-    
-    if (openedDoors.includes(day)) {
-        setFeedback('correct');
-    }
-  };
-
-  const handleGuessSubmit = () => {
-    if (!activeDoor) return;
-    
-    if (isCorrectGuess(guess, activeDoor.player)) {
-        setFeedback('correct');
-        if (!openedDoors.includes(activeDoor.day)) {
-            setOpenedDoors([...openedDoors, activeDoor.day]);
-        }
-    } else {
-        setFeedback('wrong');
-    }
-  };
-
-  const days = Array.from({ length: 24 }, (_, i) => i + 1);
+  // DATA HENTET FRA BILDET
+  const leagueTable = [
+    { rank: 1, team: 'Romsås/Ellingsrud', played: 8, won: 7, draw: 1, lost: 0, gf: 236, ga: 127, points: 15 },
+    { rank: 2, team: 'Gøy HK 4', played: 8, won: 6, draw: 2, lost: 0, gf: 248, ga: 169, points: 14 },
+    { rank: 3, team: 'Asker/Gui', played: 7, won: 5, draw: 1, lost: 1, gf: 233, ga: 169, points: 11 },
+    { rank: 4, team: 'Frogner 2', played: 6, won: 4, draw: 0, lost: 2, gf: 174, ga: 139, points: 8 },
+    { rank: 5, team: 'Haga/Raumnes & Årnes', played: 8, won: 3, draw: 0, lost: 5, gf: 207, ga: 212, points: 6 },
+    { rank: 6, team: 'Skedsmo', played: 9, won: 3, draw: 0, lost: 6, gf: 206, ga: 233, points: 6 },
+    { rank: 7, team: 'Raballder 2', played: 8, won: 3, draw: 0, lost: 5, gf: 154, ga: 181, points: 6 },
+    { rank: 8, team: 'Nordstrand Rullestolhåndball', played: 3, won: 2, draw: 0, lost: 1, gf: 74, ga: 65, points: 4 },
+    { rank: 9, team: 'Gjerdrum/Kløfta', played: 9, won: 2, draw: 0, lost: 7, gf: 181, ga: 193, points: 4 },
+    { rank: 10, team: 'HSIL/Ammerud', played: 8, won: 0, draw: 0, lost: 8, gf: 85, ga: 310, points: 0 },
+  ];
 
   return (
     <Container>
@@ -999,89 +832,41 @@ function HomePage() {
         </HeroVisuals>
       </Hero>
       
-      {/* --- JULEKALENDER START --- */}
-      <CalendarSection>
-        <CalendarHeader>
-            Guttas <span>Julekalender</span>
-            <p>Hvem skjuler seg i mørket? Gjett spilleren for å se bildet!</p>
-        </CalendarHeader>
-        
-        <CalendarGrid>
-            {days.map((dayNum) => {
-                const today = new Date().getDate();
-                const currentMonth = new Date().getMonth(); 
-                
-                // Låst logikk: Låst hvis det IKKE er i dag (både før og etter)
-                // Merk: Endre gjerne 'today' til et fast tall (f.eks 1) for å teste at luke 1 fungerer
-                const isLocked = (dayNum !== today) || (currentMonth !== 11);
-
-                const isOpen = openedDoors.includes(dayNum);
-                const hasData = calendarData && calendarData.find(d => Number(d.day) === dayNum);
-
-                return (
-                    <CalendarDoor 
-                        key={dayNum} 
-                        onClick={() => hasData ? handleDoorClick(dayNum) : alert("Ingen luke her enda!")}
-                        $isLocked={isLocked || !hasData}
-                        $isOpen={isOpen}
-                        style={{ opacity: !hasData ? 0.2 : (isLocked ? 0.5 : 1) }}
-                    >
-                        {dayNum}
-                    </CalendarDoor>
-                );
-            })}
-        </CalendarGrid>
-
-        {/* Modal for gjetting */}
-        {activeDoor && (
-            <ModalOverlay onClick={() => setActiveDoor(null)}>
-                <ModalContent onClick={e => e.stopPropagation()}>
-                    <button className="close-btn" onClick={() => setActiveDoor(null)}>✕</button>
-                    <h3>Luke {activeDoor.day}</h3>
-                    
-                    <MysteryImageContainer>
-                        {activeDoor.image ? (
-                            <MysteryImage 
-                                src={activeDoor.image} 
-                                alt="Mystery Player" 
-                                $isRevealed={feedback === 'correct'} 
-                            />
-                        ) : (
-                            <div style={{color:'#666'}}>Ingen bilde lastet opp</div>
-                        )}
-                    </MysteryImageContainer>
-
-                    <GuessInput>
-                        <p className="hint-text">Hint: {activeDoor.hint}</p>
-                        
-                        {feedback !== 'correct' && (
-                            <>
-                                <input 
-                                    type="text" 
-                                    placeholder="Hvilken spiller er dette?" 
-                                    value={guess}
-                                    onChange={(e) => setGuess(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleGuessSubmit()}
-                                />
-                                <button onClick={handleGuessSubmit}>Gjett Spiller</button>
-                            </>
-                        )}
-
-                        {feedback === 'wrong' && <p className="feedback wrong">Feil! Prøv igjen.</p>}
-                        {feedback === 'correct' && (
-                            <div className="feedback correct">
-                                <p>Riktig! 🦁</p>
-                                <p style={{color: 'white', fontSize: '1.2rem', marginTop: '0.5rem', fontWeight: '900', fontStyle: 'italic'}}>
-                                    {activeDoor.player}
-                                </p>
-                            </div>
-                        )}
-                    </GuessInput>
-                </ModalContent>
-            </ModalOverlay>
-        )}
-      </CalendarSection>
-      {/* --- JULEKALENDER SLUTT --- */}
+      {/* --- LEAGUE TABLE START --- */}
+      <TableSection>
+        <SectionHeader>Tabell <span>Toppen</span></SectionHeader>
+        <TableWrapper>
+            <StyledTable>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Lag</th>
+                        <th>K</th>
+                        <th>V</th>
+                        <th>U</th>
+                        <th>T</th>
+                        <th>Mål</th>
+                        <th>P</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {leagueTable.map((row) => (
+                        <TableRow key={row.rank} $isHomeTeam={row.team === 'Asker/Gui'}>
+                            <td>{row.rank}.</td>
+                            <td>{row.team}</td>
+                            <td>{row.played}</td>
+                            <td>{row.won}</td>
+                            <td>{row.draw}</td>
+                            <td>{row.lost}</td>
+                            <td>{row.gf} - {row.ga}</td>
+                            <td>{row.points}</td>
+                        </TableRow>
+                    ))}
+                </tbody>
+            </StyledTable>
+        </TableWrapper>
+      </TableSection>
+      {/* --- LEAGUE TABLE SLUTT --- */}
 
       <MotmSection>
         <SectionHeader>Kampens <span>Gigant</span></SectionHeader>
