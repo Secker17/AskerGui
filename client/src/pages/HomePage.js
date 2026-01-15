@@ -100,7 +100,7 @@ const HeroContent = styled.div`
   }
 `;
 
-// --- VISUALS COMPONENT (Gutta bildet med ny gradient) ---
+// --- VISUALS COMPONENT ---
 const HeroVisuals = styled.div`
   flex: 1;
   height: 100%; 
@@ -114,7 +114,6 @@ const HeroVisuals = styled.div`
   z-index: 5;
   pointer-events: none; 
 
-  /* Gradient overlay som fader bildet til sort i bunnen */
   &::after {
     content: '';
     position: absolute;
@@ -731,7 +730,8 @@ const StatsContent = styled.div`
 `;
 
 function HomePage() {
-  const { motm, matchData } = useContext(DataContext);
+  // HENT TABELL OG MATCH DATA FRA DATABASE CONTEXT (IKKE HARDKODET LENGER)
+  const { motm, matchData, leagueTable } = useContext(DataContext);
   const [logo] = useState('/images/standard_832px-Asker_SK_logo.svg.png');
   const teamImage = '/images/gutta.png'; 
   
@@ -755,19 +755,14 @@ function HomePage() {
     return '0 POENG'; 
   };
 
-  // DATA HENTET FRA BILDET
-  const leagueTable = [
-    { rank: 1, team: 'Romsås/Ellingsrud', played: 8, won: 7, draw: 1, lost: 0, gf: 236, ga: 127, points: 15 },
-    { rank: 2, team: 'Gøy HK 4', played: 8, won: 6, draw: 2, lost: 0, gf: 248, ga: 169, points: 14 },
-    { rank: 3, team: 'Asker/Gui', played: 7, won: 5, draw: 1, lost: 1, gf: 233, ga: 169, points: 11 },
-    { rank: 4, team: 'Frogner 2', played: 6, won: 4, draw: 0, lost: 2, gf: 174, ga: 139, points: 8 },
-    { rank: 5, team: 'Haga/Raumnes & Årnes', played: 8, won: 3, draw: 0, lost: 5, gf: 207, ga: 212, points: 6 },
-    { rank: 6, team: 'Skedsmo', played: 9, won: 3, draw: 0, lost: 6, gf: 206, ga: 233, points: 6 },
-    { rank: 7, team: 'Raballder 2', played: 8, won: 3, draw: 0, lost: 5, gf: 154, ga: 181, points: 6 },
-    { rank: 8, team: 'Nordstrand Rullestolhåndball', played: 3, won: 2, draw: 0, lost: 1, gf: 74, ga: 65, points: 4 },
-    { rank: 9, team: 'Gjerdrum/Kløfta', played: 9, won: 2, draw: 0, lost: 7, gf: 181, ga: 193, points: 4 },
-    { rank: 10, team: 'HSIL/Ammerud', played: 8, won: 0, draw: 0, lost: 8, gf: 85, ga: 310, points: 0 },
-  ];
+  // SORTER TABELLEN AUTOMATISK (POENG -> MÅLFORSKJELL -> MÅL SCORET)
+  const sortedTable = leagueTable ? [...leagueTable].sort((a, b) => {
+     if (b.points !== a.points) return b.points - a.points;
+     const gdA = a.gf - a.ga;
+     const gdB = b.gf - b.ga;
+     if (gdB !== gdA) return gdB - gdA;
+     return b.gf - a.gf;
+  }) : [];
 
   return (
     <Container>
@@ -787,7 +782,7 @@ function HomePage() {
           <FightCard>
             <TeamBlock $isWinner={currentMatch.isFinished && currentMatch.score.home > currentMatch.score.away}>
               {currentMatch.isFinished && currentMatch.score.home > currentMatch.score.away && (
-                 <WinnerStamp>SEIER</WinnerStamp>
+                  <WinnerStamp>SEIER</WinnerStamp>
               )}
               <img src={currentMatch.homeLogo} alt="Home" />
               <span>{currentMatch.homeTeam}</span>
@@ -850,18 +845,23 @@ function HomePage() {
                     </tr>
                 </thead>
                 <tbody>
-                    {leagueTable.map((row) => (
-                        <TableRow key={row.rank} $isHomeTeam={row.team === 'Asker/Gui'}>
-                            <td>{row.rank}.</td>
-                            <td>{row.team}</td>
-                            <td>{row.played}</td>
-                            <td>{row.won}</td>
-                            <td>{row.draw}</td>
-                            <td>{row.lost}</td>
-                            <td>{row.gf} - {row.ga}</td>
-                            <td>{row.points}</td>
-                        </TableRow>
-                    ))}
+                    {/* VISER DATA FRA DATABASEN NÅ! */}
+                    {sortedTable.length > 0 ? (
+                        sortedTable.map((row, index) => (
+                            <TableRow key={row.id || index} $isHomeTeam={row.team.includes('Asker')}>
+                                <td>{index + 1}.</td>
+                                <td>{row.team}</td>
+                                <td>{row.played}</td>
+                                <td>{row.won}</td>
+                                <td>{row.draw}</td>
+                                <td>{row.lost}</td>
+                                <td>{row.gf} - {row.ga}</td>
+                                <td>{row.points}</td>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <tr><td colSpan="8" style={{padding: '2rem'}}>Laster tabell...</td></tr>
+                    )}
                 </tbody>
             </StyledTable>
         </TableWrapper>

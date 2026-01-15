@@ -1,8 +1,8 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
-import Tesseract from 'tesseract.js'; // NY IMPORT
+import Tesseract from 'tesseract.js';
 
 // --- Styled Components ---
 
@@ -495,7 +495,8 @@ function AdminPage() {
   const [editingCase, setEditingCase] = useState(null);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [loading, setLoading] = useState(false); 
-  const [analyzing, setAnalyzing] = useState(false); // Ny state for OCR
+  const [analyzing, setAnalyzing] = useState(false); 
+  const [statusText, setStatusText] = useState('');
 
   const [matchForm, setMatchForm] = useState({ date: '', time: '', opponent: '', location: '', logo: '' });
   const [caseForm, setCaseForm] = useState({ player: '', reason: '', fine: '', likelihood: 0.5, round: '' });
@@ -509,7 +510,6 @@ function AdminPage() {
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-  // --- PRE-DEFINED TEAMS FROM IMAGE (Fallback) ---
   const initialTeams = [
     { team: 'Romsås/Ellingsrud', played: 8, won: 7, draw: 1, lost: 0, gf: 236, ga: 127 },
     { team: 'Gøy HK 4', played: 8, won: 6, draw: 2, lost: 0, gf: 248, ga: 169 },
@@ -600,16 +600,55 @@ function AdminPage() {
     setLoading(false);
   };
 
-  // --- TABLE LOGIC (OCR & MANUELL) ---
+  // --- NY & FORBEDRET OCR LOGIKK ---
 
-  // Ny funksjon: OCR Bildeanalyse
+  // Hjelpefunksjon for å pre-prosessere bilde for bedre OCR
+  const preprocessImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Oppskaler bildet for bedre tekstgjenkjenning
+          const scaleFactor = 2; 
+          canvas.width = img.width * scaleFactor;
+          canvas.height = img.height * scaleFactor;
+          
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Gjør om til gråtone og øk kontrast
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            // Enkel binarisering (svart/hvitt)
+            const color = avg > 128 ? 255 : 0; 
+            data[i] = color;     // R
+            data[i + 1] = color; // G
+            data[i + 2] = color; // B
+          }
+          ctx.putImageData(imageData, 0, 0);
+          resolve(canvas.toDataURL('image/jpeg'));
+        };
+        img.onerror = (err) => reject(err);
+      };
+    });
+  };
+
   const handleTableImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if(!window.confirm("Dette vil forsøke å lese tabellen fra bildet og OVERSKRIVE dagens tabell. Vil du fortsette?")) return;
+    if(!window.confirm("Dette vil lese tabellen fra bildet og OVERSKRIVE dagens tabell. Vil du fortsette?")) return;
 
     setAnalyzing(true);
+    setStatusText("Forbehandler bilde...");
 
     try {
       // 1. Slett eksisterende
@@ -619,48 +658,84 @@ function AdminPage() {
         }
       }
 
-      // 2. OCR Analyse
+      // 2. Pre-prosesser bilde (Gjør det svart/hvitt og skarpere)
+      const optimizedImage = await preprocessImage(file);
+
+      setStatusText("Leser tekst (dette tar litt tid)...");
+
+      // 3. Analyser bilde med Tesseract
       const result = await Tesseract.recognize(
-        file,
-        'eng', 
-        { logger: m => console.log(m) }
+        optimizedImage,
+        'nor+eng', // Bruk både norsk og engelsk
+        { 
+          logger: m => {
+             if(m.status === 'recognizing text') {
+               setStatusText(`Analyserer: ${Math.round(m.progress * 100)}%`);
+             }
+          },
+          tessedit_pageseg_mode: '6', // PSM 6 antar en enkelt tekstblokk
+        }
       );
 
-      const lines = result.data.text.split('\n');
-      console.log("OCR Resultat:", lines);
-
+      setStatusText("Tolker data...");
+      const lines = result.data.text.split('\n').filter(line => line.trim() !== '');
+      console.log("OCR Rådata:", lines);
+      
       let teamsAdded = 0;
 
       for (let line of lines) {
-        // Regex: Lagnavn (tekst) + 6 tall (K, V, U, T, M+, M-)
-        // Eks: "Lagnavn 8 7 1 0 236 127" eller "236-127"
-        const regex = /^([A-Za-zÆØÅæøå0-9\s\/&\.\-]+?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*[–-]?\s*(\d+)/;
-        const match = line.trim().match(regex);
+        line = line.trim();
+
+        // Hopp over overskrifter og støy
+        const lower = line.toLowerCase();
+        if (lower.includes('lag') || lower.includes('kamper') || lower.includes('mål') || line.length < 5) continue;
+
+        // --- SMARTERE REGEX STRATEGI ---
+        // I stedet for å matche hele linjen perfekt fra start, ser vi etter mønsteret av tall PÅ SLUTTEN av linjen.
+        // Formatet er nesten alltid: Lagnavn [mellomrom] K V U T M+ - M-
+        
+        // Matcher: (Alt fram til tallene) (Tall) (Tall) (Tall) (Tall) (Tall) (Bindestrek/Mellomrom) (Tall)
+        const regex = /(.*?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*[-:–.,]\s*(\d+)/;
+        
+        const match = line.match(regex);
 
         if (match) {
-          const teamName = match[1].trim();
-          if(teamName.toLowerCase().includes('lag') || teamName.length < 2) continue;
+          let rawTeamName = match[1].trim();
 
-          const stats = {
-            team: teamName,
-            played: Number(match[2]),
-            won: Number(match[3]),
-            draw: Number(match[4]),
-            lost: Number(match[5]),
-            gf: Number(match[6]),
-            ga: Number(match[7]),
-          };
+          // Rens lagnavn: Fjern plasseringstall i starten (f.eks "1. Lagnavn" eller "1 Lagnavn")
+          let teamName = rawTeamName.replace(/^\d+[\.,]?\s*/, '');
+          
+          // Fjern eventuelle rare tegn som OCR har lagt til starten/slutten
+          teamName = teamName.replace(/^[._\-:;|]+/, '').trim();
 
-          const points = (stats.won * 2) + (stats.draw * 1);
-          await addTableRow({ ...stats, points, rank: 0 });
+          // Ignorer hvis navnet ble tomt eller ser ut som støy
+          if (teamName.length < 2 || !isNaN(teamName)) continue;
+
+          // Tolk tallene
+          const played = Number(match[2]);
+          const won = Number(match[3]);
+          const draw = Number(match[4]);
+          const lost = Number(match[5]);
+          const gf = Number(match[6]); // Goals For
+          const ga = Number(match[7]); // Goals Against
+          
+          const points = (won * 2) + (draw * 1);
+          
+          // Lagre til DB
+          console.log(`Fant lag: ${teamName}`, { played, won, draw, lost, gf, ga });
+          await addTableRow({ 
+            team: teamName, 
+            played, won, draw, lost, gf, ga, points, 
+            rank: 0 
+          });
           teamsAdded++;
         }
       }
 
       if (teamsAdded === 0) {
-        alert("Klarte ikke å lese tabell-linjer. Sjekk at bildet er tydelig og lyst.");
+        alert("Fant ingen lag. Prøv å ta et tydeligere bilde der kun tabellen vises (zoom inn).");
       } else {
-        alert(`Suksess! Fant og la til ${teamsAdded} lag.`);
+        alert(`Suksess! La til ${teamsAdded} lag.`);
       }
 
     } catch (err) {
@@ -668,10 +743,10 @@ function AdminPage() {
       alert("Feil under analyse: " + err.message);
     } finally {
       setAnalyzing(false);
+      setStatusText("");
     }
   };
 
-  // Gammel populate funksjon (fallback)
   const populateTable = async () => {
     if(!window.confirm("Slett tabell og last inn standard data?")) return;
     setLoading(true);
@@ -900,13 +975,12 @@ function AdminPage() {
         {/* --- TAB: TABLE (AUTOMATISK SORTERING & OCR) --- */}
         {activeTab === 'table' && (
            <>
-            {/* NY DEL: OCR OPPLASTING */}
             <Card style={{ border: '1px solid #ff4500' }}>
               <CardTitle>⚡ Smart Tabell-oppdatering</CardTitle>
               {analyzing ? (
                 <div style={{textAlign: 'center', padding: '2rem', color: '#ff4500'}}>
-                   <h3>🤖 Analyserer bildet...</h3>
-                   <p>Dette kan ta noen sekunder. Vennligst vent.</p>
+                   <h3>🤖 {statusText || 'Analyserer bildet...'}</h3>
+                   <p>Dette tar vanligvis 5-10 sekunder.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
@@ -914,15 +988,15 @@ function AdminPage() {
                      <input type="file" accept="image/*" hidden onChange={handleTableImageUpload} />
                      <span style={{fontSize: '1.2rem'}}>📸 Last opp screenshot av tabell</span>
                      <span style={{fontSize: '0.8rem', color: '#666'}}>
-                       Bildet må være tydelig. Format: Lagnavn K V U T Mål+ Mål-
+                       Støtter de fleste tabellformater
                      </span>
                    </UploadBox>
                    <div style={{ flex: 1, fontSize: '0.9rem', color: '#888' }}>
                       <p>Tips for best resultat:</p>
                       <ul style={{paddingLeft: '1.2rem'}}>
-                        <li>Ta bilde kun av selve tabellen (klipp bort menyer).</li>
-                        <li>Sørg for hvit bakgrunn og svart tekst hvis mulig.</li>
-                        <li>Sjekk tallene manuelt etterpå.</li>
+                        <li>Klipp bildet slik at KUN tabellen vises.</li>
+                        <li>Sjekk at tallene er tydelige.</li>
+                        <li>Vi fikser automatisk farger og kontrast!</li>
                       </ul>
                    </div>
                 </div>
@@ -933,19 +1007,16 @@ function AdminPage() {
                 <CardTitle>{editingTableRow ? `Rediger: ${editingTableRow.team}` : 'Legg til lag (Manuelt)'}</CardTitle>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px 60px 80px 80px', gap: '0.8rem', alignItems: 'end' }}>
                     
-                    {/* LAGNAVN */}
                     <FormGroup style={{marginBottom:0}}>
                         <Label>Lagnavn</Label>
                         <Input value={tableForm.team} onChange={e => setTableForm({...tableForm, team: e.target.value})} />
                     </FormGroup>
                     
-                    {/* STATS */}
                     <FormGroup style={{marginBottom:0}}><Label>K</Label><Input type="number" value={tableForm.played} onChange={e => setTableForm({...tableForm, played: e.target.value})} /></FormGroup>
                     <FormGroup style={{marginBottom:0}}><Label>V</Label><Input type="number" value={tableForm.won} onChange={e => setTableForm({...tableForm, won: e.target.value})} /></FormGroup>
                     <FormGroup style={{marginBottom:0}}><Label>U</Label><Input type="number" value={tableForm.draw} onChange={e => setTableForm({...tableForm, draw: e.target.value})} /></FormGroup>
                     <FormGroup style={{marginBottom:0}}><Label>T</Label><Input type="number" value={tableForm.lost} onChange={e => setTableForm({...tableForm, lost: e.target.value})} /></FormGroup>
                     
-                    {/* MÅL */}
                     <FormGroup style={{marginBottom:0}}><Label>Mål+</Label><Input type="number" value={tableForm.gf} onChange={e => setTableForm({...tableForm, gf: e.target.value})} /></FormGroup>
                     <FormGroup style={{marginBottom:0}}><Label>Mål-</Label><Input type="number" value={tableForm.ga} onChange={e => setTableForm({...tableForm, ga: e.target.value})} /></FormGroup>
                 </div>
@@ -968,7 +1039,6 @@ function AdminPage() {
                    </Button>
                 </div>
 
-                {/* Header Row */}
                 <ListRow style={{background:'#0a0a0a', borderBottom:'2px solid #333', color:'#888', fontSize:'0.8rem'}}>
                     <div className="info" style={{width:'100%', display:'grid', gridTemplateColumns: '40px 1fr 40px 40px 40px 40px 100px 50px', gap: '10px'}}>
                         <span>#</span><span>Lag</span><span>K</span><span>V</span><span>U</span><span>T</span><span>Mål</span><span>P</span>
@@ -976,7 +1046,6 @@ function AdminPage() {
                     <div style={{width:'140px'}}>Handling</div>
                 </ListRow>
 
-                {/* Data Rows (Sorted) */}
                 {sortedTable.map((row, index) => (
                     <ListRow key={row.id}>
                         <div className="info" style={{width:'100%', display:'grid', gridTemplateColumns: '40px 1fr 40px 40px 40px 40px 100px 50px', gap: '10px'}}>
