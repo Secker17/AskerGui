@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
+import Tesseract from 'tesseract.js'; // NY IMPORT
 
 // --- Styled Components ---
 
@@ -494,12 +495,13 @@ function AdminPage() {
   const [editingCase, setEditingCase] = useState(null);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [loading, setLoading] = useState(false); 
+  const [analyzing, setAnalyzing] = useState(false); // Ny state for OCR
 
   const [matchForm, setMatchForm] = useState({ date: '', time: '', opponent: '', location: '', logo: '' });
   const [caseForm, setCaseForm] = useState({ player: '', reason: '', fine: '', likelihood: 0.5, round: '' });
   const [playerForm, setPlayerForm] = useState({ name: '', number: '', position: '', imagePreview: null, image: '', isCaptain: false, isTeamLeader: false, isTrainer: false });
   
-  // Tabell form (Forenklet: Kun lag og kampdata, poeng beregnes)
+  // Tabell form
   const [tableForm, setTableForm] = useState({
     team: '', played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0
   });
@@ -507,7 +509,7 @@ function AdminPage() {
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-  // --- PRE-DEFINED TEAMS FROM IMAGE ---
+  // --- PRE-DEFINED TEAMS FROM IMAGE (Fallback) ---
   const initialTeams = [
     { team: 'Romsås/Ellingsrud', played: 8, won: 7, draw: 1, lost: 0, gf: 236, ga: 127 },
     { team: 'Gøy HK 4', played: 8, won: 6, draw: 2, lost: 0, gf: 248, ga: 169 },
@@ -551,7 +553,7 @@ function AdminPage() {
     }
   };
 
-  // --- MATCH & PLAYER & CASE LOGIC (Beholdes likt) ---
+  // --- MATCH & PLAYER & CASE LOGIC ---
   const handleUpdateMatchData = (field, value) => updateMatchData({ ...matchData, [field]: value });
   const handleScoreUpdate = (team, value) => updateMatchData({ ...matchData, score: { ...matchData.score, [team]: Number(value) } });
   
@@ -598,24 +600,90 @@ function AdminPage() {
     setLoading(false);
   };
 
-  // --- TABLE LOGIC (REDESIGNET) ---
+  // --- TABLE LOGIC (OCR & MANUELL) ---
 
-  // Funksjon for å resette tabellen med data fra bildet
+  // Ny funksjon: OCR Bildeanalyse
+  const handleTableImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if(!window.confirm("Dette vil forsøke å lese tabellen fra bildet og OVERSKRIVE dagens tabell. Vil du fortsette?")) return;
+
+    setAnalyzing(true);
+
+    try {
+      // 1. Slett eksisterende
+      if(leagueTable && leagueTable.length > 0) {
+        for(let row of leagueTable) {
+           if(deleteTableRow) await deleteTableRow(row.id);
+        }
+      }
+
+      // 2. OCR Analyse
+      const result = await Tesseract.recognize(
+        file,
+        'eng', 
+        { logger: m => console.log(m) }
+      );
+
+      const lines = result.data.text.split('\n');
+      console.log("OCR Resultat:", lines);
+
+      let teamsAdded = 0;
+
+      for (let line of lines) {
+        // Regex: Lagnavn (tekst) + 6 tall (K, V, U, T, M+, M-)
+        // Eks: "Lagnavn 8 7 1 0 236 127" eller "236-127"
+        const regex = /^([A-Za-zÆØÅæøå0-9\s\/&\.\-]+?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*[–-]?\s*(\d+)/;
+        const match = line.trim().match(regex);
+
+        if (match) {
+          const teamName = match[1].trim();
+          if(teamName.toLowerCase().includes('lag') || teamName.length < 2) continue;
+
+          const stats = {
+            team: teamName,
+            played: Number(match[2]),
+            won: Number(match[3]),
+            draw: Number(match[4]),
+            lost: Number(match[5]),
+            gf: Number(match[6]),
+            ga: Number(match[7]),
+          };
+
+          const points = (stats.won * 2) + (stats.draw * 1);
+          await addTableRow({ ...stats, points, rank: 0 });
+          teamsAdded++;
+        }
+      }
+
+      if (teamsAdded === 0) {
+        alert("Klarte ikke å lese tabell-linjer. Sjekk at bildet er tydelig og lyst.");
+      } else {
+        alert(`Suksess! Fant og la til ${teamsAdded} lag.`);
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Feil under analyse: " + err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // Gammel populate funksjon (fallback)
   const populateTable = async () => {
-    if(!window.confirm("Er du sikker? Dette sletter nåværende tabell og legger inn standard-data.")) return;
+    if(!window.confirm("Slett tabell og last inn standard data?")) return;
     setLoading(true);
     try {
-        // Slett eksisterende
         if(leagueTable && leagueTable.length > 0) {
             for(let row of leagueTable) {
                 if(deleteTableRow) await deleteTableRow(row.id);
             }
         }
-        // Legg til lagene fra bildet
         for(let teamData of initialTeams) {
              const points = (teamData.won * 2) + (teamData.draw * 1);
-             const rank = 0; // Vi beregner rank ved visning, lagrer bare data
-             await addTableRow({ ...teamData, points, rank }); 
+             await addTableRow({ ...teamData, points, rank: 0 }); 
         }
         alert("Tabell lastet inn!");
     } catch (e) {
@@ -628,9 +696,7 @@ function AdminPage() {
       if(!tableForm.team) return alert("Mangler lagnavn");
       setLoading(true);
       try {
-          // Beregn poeng automatisk: Seier=2, Uavgjort=1
           const calculatedPoints = (Number(tableForm.won) * 2) + Number(tableForm.draw);
-          
           const data = {
               team: tableForm.team,
               played: Number(tableForm.played),
@@ -640,7 +706,7 @@ function AdminPage() {
               gf: Number(tableForm.gf),
               ga: Number(tableForm.ga),
               points: calculatedPoints,
-              rank: 0 // Placeholder, sortering skjer i frontend
+              rank: 0 
           };
 
           if(editingTableRow) {
@@ -664,7 +730,6 @@ function AdminPage() {
       window.scrollTo(0,0);
   };
 
-  // Sorteringsfunksjon for tabellen (Poeng > Målforskjell > Mål scoret)
   const sortedTable = leagueTable ? [...leagueTable].sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       const gdA = a.gf - a.ga;
@@ -832,11 +897,40 @@ function AdminPage() {
            </>
         )}
 
-        {/* --- TAB: TABLE (AUTOMATISK SORTERING & POENG) --- */}
+        {/* --- TAB: TABLE (AUTOMATISK SORTERING & OCR) --- */}
         {activeTab === 'table' && (
            <>
+            {/* NY DEL: OCR OPPLASTING */}
+            <Card style={{ border: '1px solid #ff4500' }}>
+              <CardTitle>⚡ Smart Tabell-oppdatering</CardTitle>
+              {analyzing ? (
+                <div style={{textAlign: 'center', padding: '2rem', color: '#ff4500'}}>
+                   <h3>🤖 Analyserer bildet...</h3>
+                   <p>Dette kan ta noen sekunder. Vennligst vent.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                   <UploadBox style={{ flex: 1 }}>
+                     <input type="file" accept="image/*" hidden onChange={handleTableImageUpload} />
+                     <span style={{fontSize: '1.2rem'}}>📸 Last opp screenshot av tabell</span>
+                     <span style={{fontSize: '0.8rem', color: '#666'}}>
+                       Bildet må være tydelig. Format: Lagnavn K V U T Mål+ Mål-
+                     </span>
+                   </UploadBox>
+                   <div style={{ flex: 1, fontSize: '0.9rem', color: '#888' }}>
+                      <p>Tips for best resultat:</p>
+                      <ul style={{paddingLeft: '1.2rem'}}>
+                        <li>Ta bilde kun av selve tabellen (klipp bort menyer).</li>
+                        <li>Sørg for hvit bakgrunn og svart tekst hvis mulig.</li>
+                        <li>Sjekk tallene manuelt etterpå.</li>
+                      </ul>
+                   </div>
+                </div>
+              )}
+            </Card>
+
             <Card>
-                <CardTitle>{editingTableRow ? `Rediger: ${editingTableRow.team}` : 'Legg til lag'}</CardTitle>
+                <CardTitle>{editingTableRow ? `Rediger: ${editingTableRow.team}` : 'Legg til lag (Manuelt)'}</CardTitle>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px 60px 80px 80px', gap: '0.8rem', alignItems: 'end' }}>
                     
                     {/* LAGNAVN */}
@@ -870,7 +964,7 @@ function AdminPage() {
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem'}}>
                    <CardTitle style={{margin:0}}>Nåværende Tabell</CardTitle>
                    <Button danger onClick={populateTable} style={{fontSize:'0.8rem', padding:'0.5rem 1rem'}}>
-                       <span>⚠️ Last inn standardtabell</span>
+                       <span>⚠️ Reset til standard</span>
                    </Button>
                 </div>
 
