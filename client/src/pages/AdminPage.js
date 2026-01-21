@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
@@ -703,7 +703,7 @@ function AdminPage() {
           let rawTeamName = match[1].trim();
 
           // Rens lagnavn: Fjern plasseringstall i starten (f.eks "1. Lagnavn" eller "1 Lagnavn")
-          let teamName = rawTeamName.replace(/^\d+[\.,]?\s*/, '');
+  let teamName = rawTeamName.replace(/^\d+[.,]?\s*/, '');
           
           // Fjern eventuelle rare tegn som OCR har lagt til starten/slutten
           teamName = teamName.replace(/^[._\-:;|]+/, '').trim();
