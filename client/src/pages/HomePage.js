@@ -126,7 +126,7 @@ const HeroVisuals = styled.div`
   }
 
   img {
-    max-height: 80vh; 
+    max-height: 100vh; 
     width: auto;
     object-fit: contain;
     filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
@@ -145,7 +145,7 @@ const HeroVisuals = styled.div`
     margin-top: -2rem; 
     
     img {
-      max-height: 50vh; 
+      max-height: 60vh; 
       width: 100%;
       object-fit: contain;
       mask-image: none;
