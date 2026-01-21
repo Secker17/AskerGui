@@ -100,7 +100,7 @@ const HeroContent = styled.div`
   }
 `;
 
-// --- VISUALS COMPONENT ---
+// --- VISUALS COMPONENT ----
 const HeroVisuals = styled.div`
   flex: 1;
   height: 100%; 
