@@ -14,11 +14,17 @@ const defaultMotm = {
   image: '⭐',
 };
 
+// Ny default for toppscorer
+const defaultTopScorer = {
+  name: '',
+  goals: 0
+};
+
 const defaultMatches = [];
 const defaultCases = [];
 const defaultPlayers = [];
 const defaultCalendar = [];
-const defaultLeagueTable = []; // Ny default for tabell
+const defaultLeagueTable = [];
 
 const defaultMatchData = {
   homeTeam: 'Asker',
@@ -32,12 +38,13 @@ const defaultMatchData = {
 
 export function DataProvider({ children }) {
   const [motm, setMotm] = useState(defaultMotm);
+  const [topScorer, setTopScorer] = useState(defaultTopScorer); // <--- NY STATE
   const [matches, setMatches] = useState(defaultMatches);
   const [cases, setCases] = useState(defaultCases);
   const [players, setPlayers] = useState(defaultPlayers);
   const [matchData, setMatchData] = useState(defaultMatchData);
   const [calendarData, setCalendarData] = useState(defaultCalendar);
-  const [leagueTable, setLeagueTable] = useState(defaultLeagueTable); // Ny state for tabell
+  const [leagueTable, setLeagueTable] = useState(defaultLeagueTable);
 
   // --- FIREBASE LISTENERS ---
   useEffect(() => {
@@ -46,6 +53,13 @@ export function DataProvider({ children }) {
     const unsubscribeMotm = onValue(motmRef, (snapshot) => {
       const data = snapshot.val();
       setMotm(data || defaultMotm);
+    });
+
+    // Listen to TOP SCORER (NY)
+    const topScorerRef = ref(database, 'topScorer');
+    const unsubscribeTopScorer = onValue(topScorerRef, (snapshot) => {
+      const data = snapshot.val();
+      setTopScorer(data || defaultTopScorer);
     });
 
     // Listen to Matches
@@ -103,12 +117,11 @@ export function DataProvider({ children }) {
       }
     });
 
-    // --- NY LISTENER: TABLE (TABELL) ---
+    // Listen to Table
     const tableRef = ref(database, 'table');
     const unsubscribeTable = onValue(tableRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Konverterer objektet fra Firebase til en array med ID
         const tableArray = Object.keys(data).map(key => ({ ...data[key], id: key }));
         setLeagueTable(tableArray);
       } else {
@@ -119,12 +132,13 @@ export function DataProvider({ children }) {
     // Cleanup listeners
     return () => {
       unsubscribeMotm();
+      unsubscribeTopScorer(); // <--- Cleanup
       unsubscribeMatches();
       unsubscribeCases();
       unsubscribePlayers();
       unsubscribeMatchData();
       unsubscribeCalendar();
-      unsubscribeTable(); // Husk cleanup for tabell
+      unsubscribeTable();
     };
   }, []);
 
@@ -137,6 +151,18 @@ export function DataProvider({ children }) {
       return true;
     } catch (error) {
       console.error('Error updating MOTM:', error);
+      throw error;
+    }
+  };
+
+  // NY FUNKSJON: TOPPSCORER
+  const updateTopScorer = async (newData) => {
+    try {
+      setTopScorer(newData);
+      await set(ref(database, 'topScorer'), newData);
+      return true;
+    } catch (error) {
+      console.error('Error updating Top Scorer:', error);
       throw error;
     }
   };
@@ -265,7 +291,7 @@ export function DataProvider({ children }) {
     }
   };
 
-  // --- NYE FUNKSJONER: TABLE (TABELL) ---
+  // --- TABELL FUNKSJONER ---
   
   const addTableRow = async (row) => {
     try {
@@ -304,7 +330,9 @@ export function DataProvider({ children }) {
       await remove(ref(database, 'cases'));
       await remove(ref(database, 'players'));
       await remove(ref(database, 'calendar'));
-      await remove(ref(database, 'table')); // Tømmer også tabellen
+      await remove(ref(database, 'table'));
+      await remove(ref(database, 'motm'));
+      await remove(ref(database, 'topScorer')); // <--- Sletter også toppscorer ved reset
       return true;
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -315,12 +343,12 @@ export function DataProvider({ children }) {
   return (
     <DataContext.Provider value={{
       motm, updateMotm,
+      topScorer, updateTopScorer, // <--- EKSPORTERER TOPPSCORER HER
       matches, addMatch, deleteMatch, updateMatch,
       cases, addCase, deleteCase, updateCase,
       players, addPlayer, deletePlayer, updatePlayer,
       matchData, updateMatchData,
       calendarData, addToCalendar, deleteFromCalendar,
-      // Eksporterer Tabell-funksjonalitet:
       leagueTable, addTableRow, deleteTableRow, updateTableRow, 
       clearAllData
     }}>

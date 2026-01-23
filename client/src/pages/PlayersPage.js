@@ -1,11 +1,16 @@
 import React, { useContext } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { DataContext } from '../context/DataContext';
 
 // --- Animasjoner ---
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(40px) skew(-5deg); }
   to { opacity: 1; transform: translateY(0) skew(-5deg); }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 `;
 
 // --- Styled Components ---
@@ -18,7 +23,6 @@ const Container = styled.div`
   overflow-x: hidden;
   padding-bottom: 4rem;
 
-  /* Aggressive Background Grid */
   background-image: 
     linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
@@ -76,7 +80,7 @@ const PageSubtitle = styled.div`
 const StatsHUD = styled.div`
   display: flex;
   justify-content: center;
-  gap: 1px; /* Gap created by borders */
+  gap: 1px;
   background: #222;
   max-width: 900px;
   margin: 0 auto 4rem;
@@ -104,7 +108,6 @@ const HUDItem = styled.div`
 
   &:hover {
     background: #161616;
-    
     .val { color: #ff4500; text-shadow: 0 0 10px rgba(255,69,0,0.5); }
   }
 
@@ -114,7 +117,7 @@ const HUDItem = styled.div`
     font-weight: 900;
     color: white;
     line-height: 1;
-    transform: skew(10deg); /* Counter-skew text */
+    transform: skew(10deg);
     transition: 0.3s;
     text-transform: uppercase;
   }
@@ -162,7 +165,7 @@ const CardContent = styled.div`
   padding: 1.5rem;
   background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.8) 50%, transparent 100%);
   z-index: 2;
-  transform: skew(5deg); /* Counter skew */
+  transform: skew(5deg);
   transition: transform 0.3s ease;
 `;
 
@@ -179,14 +182,17 @@ const BigNumber = styled.div`
   transition: all 0.4s ease;
 `;
 
-// --- NYE BADGES ---
+// --- BADGES ---
+
 const CaptainBadge = styled.div`
   position: absolute;
   top: 15px;
   left: 15px;
-  width: 40px;
-  height: 40px;
-  background: #ff4500;
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(45deg, #FFD700, #FDB931, #FFD700);
+  background-size: 200% auto;
+  animation: ${shimmer} 3s linear infinite;
   color: #000;
   font-weight: 900;
   font-size: 1.5rem;
@@ -194,9 +200,9 @@ const CaptainBadge = styled.div`
   align-items: center;
   justify-content: center;
   border: 2px solid white;
-  transform: skew(5deg); /* Counter skew to match context */
+  transform: skew(5deg);
   z-index: 10;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 
   &::after {
     content: 'C';
@@ -242,22 +248,95 @@ const TrainerBadge = styled.div`
   }
 `;
 
+const MVPBadge = styled.div`
+  position: absolute;
+  bottom: 150px; 
+  left: 50%;
+  transform: translateX(-50%) skew(5deg);
+  background: #FFD700;
+  color: black;
+  font-weight: 900;
+  padding: 0.3rem 1rem;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  z-index: 10;
+  box-shadow: 0 0 10px #FFD700;
+  border: 1px solid white;
+`;
+
+// --- NYTT DESIGN FOR TOPPSCORER ---
+const TopScorerBadge = styled.div`
+  position: absolute;
+  bottom: 25px; /* Plassert nede til høyre */
+  right: 20px;
+  z-index: 20; /* Over CardContent gradienten */
+  
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  
+  text-align: right;
+  font-style: italic;
+  transform: skew(5deg); /* Matcher kortets vridning for teksten */
+
+  .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #888;
+    font-weight: 700;
+    margin-bottom: -2px;
+  }
+  
+  .count {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #00ff88; /* Neon grønn */
+    line-height: 0.9;
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+    
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    &::after {
+      content: '⚽';
+      font-size: 1rem;
+      filter: grayscale(100%); /* Gjør ballen litt mer diskret */
+      opacity: 0.7;
+    }
+  }
+`;
+
 const PlayerCard = styled.div`
   background: #121212;
   height: 400px;
   position: relative;
   overflow: hidden;
   border: 1px solid #333;
-  /* Action Shape */
   transform: skew(-5deg);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   animation: ${slideUp} 0.6s ease-out backwards;
   animation-delay: ${props => props.index * 0.1}s;
   cursor: pointer;
 
-  /* Image Container */
+  ${props => props.$isMotm && css`
+     border: 2px solid #FFD700;
+     box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+     
+     &::after {
+       background: #FFD700 !important;
+       transform: scaleX(1) !important;
+       height: 6px !important;
+     }
+
+     ${Name} span {
+       color: #FFD700 !important;
+     }
+  `}
+
   .img-wrapper {
-    width: 110%; /* Compensate for skew */
+    width: 110%;
     height: 100%;
     margin-left: -5%;
     position: relative;
@@ -266,14 +345,12 @@ const PlayerCard = styled.div`
       width: 100%;
       height: 100%;
       object-fit: cover;
-      /* Cool Effect: Grayscale to Color */
-      filter: grayscale(100%) contrast(1.2) brightness(0.9);
+      filter: ${props => props.$isMotm ? 'grayscale(0%) contrast(1.1)' : 'grayscale(100%) contrast(1.2) brightness(0.9)'};
       transition: all 0.4s ease;
-      transform: skew(5deg); /* Counter skew image so player isn't warped */
+      transform: skew(5deg);
     }
   }
 
-  /* Orange Accent Line */
   &::after {
     content: '';
     position: absolute;
@@ -288,11 +365,10 @@ const PlayerCard = styled.div`
     z-index: 3;
   }
 
-  /* HOVER STATES */
   &:hover {
     transform: skew(-5deg) translateY(-10px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    border-color: #555;
+    border-color: ${props => props.$isMotm ? '#FFD700' : '#555'};
 
     .img-wrapper img {
       filter: grayscale(0%) contrast(1.1) brightness(1.1);
@@ -300,7 +376,7 @@ const PlayerCard = styled.div`
     }
 
     ${BigNumber} {
-      color: rgba(255, 69, 0, 0.2);
+      color: ${props => props.$isMotm ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 69, 0, 0.2)'};
       transform: translateX(-10px);
     }
 
@@ -308,7 +384,7 @@ const PlayerCard = styled.div`
       transform: skew(5deg) translateY(-5px);
     }
 
-    ${CaptainBadge}, ${LeaderBadge}, ${TrainerBadge} {
+    ${CaptainBadge}, ${LeaderBadge}, ${TrainerBadge}, ${MVPBadge}, ${TopScorerBadge} {
         transform: skew(5deg) scale(1.1);
     }
 
@@ -324,12 +400,11 @@ const PlayerCard = styled.div`
     .img-wrapper { 
       width: 100%; 
       margin-left: 0;
-      
       img { transform: skew(0); }
     }
 
     ${CardContent} { transform: skew(0); }
-    ${CaptainBadge}, ${LeaderBadge}, ${TrainerBadge} { transform: skew(0); }
+    ${CaptainBadge}, ${LeaderBadge}, ${TrainerBadge}, ${MVPBadge}, ${TopScorerBadge} { transform: skew(0); }
     
     &:hover {
       transform: translateY(-5px);
@@ -383,11 +458,16 @@ const EmptyState = styled.div`
 `;
 
 function PlayersPage() {
-  const { players } = useContext(DataContext);
+  const { players, motm, topScorer } = useContext(DataContext);
 
   const sortedPlayers = [...players].sort((a, b) => {
     return (a.number || 0) - (b.number || 0);
   });
+
+  const isPlayerMotm = (player) => {
+    if (!motm) return false;
+    return player.name === motm.player || player.id === motm.id;
+  };
 
   return (
     <Container>
@@ -413,38 +493,49 @@ function PlayersPage() {
 
       {sortedPlayers.length > 0 ? (
         <Grid>
-          {sortedPlayers.map((player, index) => (
-            <PlayerCard key={player.id} index={index}>
-              {/* Viser Kaptein Badge hvis isCaptain er true */}
-              {player.isCaptain && <CaptainBadge title="Kaptein" />}
-              
-              {/* Viser Lagleder Badge hvis isTeamLeader er true */}
-              {player.isTeamLeader && <LeaderBadge>LAGLEDER</LeaderBadge>}
-              
-              {/* Viser Trener Badge hvis isTrainer er true */}
-              {player.isTrainer && <TrainerBadge title="Trener" />}
+          {sortedPlayers.map((player, index) => {
+            const isMotm = isPlayerMotm(player);
+            const isTopScorer = topScorer && topScorer.name === player.name;
 
-              <div className="img-wrapper">
-                {player.image && (player.image.startsWith('data:') || player.image.startsWith('http')) ? (
-                  <img src={player.image} alt={player.name} loading="lazy" />
-                ) : (
-                  <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', background:'#111', color:'#333'}}>
-                    🦁
-                  </div>
+            return (
+              <PlayerCard key={player.id} index={index} $isMotm={isMotm}>
+                
+                {/* Badges */}
+                {player.isCaptain && <CaptainBadge title="Kaptein" />}
+                {isMotm && <MVPBadge>MVP</MVPBadge>}
+                {player.isTeamLeader && <LeaderBadge>LAGLEDER</LeaderBadge>}
+                {player.isTrainer && <TrainerBadge title="Trener" />}
+
+                {/* --- NY TOPPSCORER PLASSERING (NEDE TIL HØYRE) --- */}
+                {isTopScorer && (
+                    <TopScorerBadge>
+                      <span className="label">Toppscorer</span>
+                      <span className="count">{topScorer.goals}</span>
+                    </TopScorerBadge>
                 )}
-              </div>
-              
-              <BigNumber>{player.number}</BigNumber>
 
-              <CardContent>
-                <Name>
-                  <span>#{player.number}</span>
-                  {player.name}
-                </Name>
-                <Position>{player.position || 'Ukjent Posisjon'}</Position>
-              </CardContent>
-            </PlayerCard>
-          ))}
+                <div className="img-wrapper">
+                  {player.image && (player.image.startsWith('data:') || player.image.startsWith('http')) ? (
+                    <img src={player.image} alt={player.name} loading="lazy" />
+                  ) : (
+                    <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', background:'#111', color:'#333'}}>
+                      🦁
+                    </div>
+                  )}
+                </div>
+                
+                <BigNumber>{player.number}</BigNumber>
+
+                <CardContent>
+                  <Name>
+                    <span>#{player.number}</span>
+                    {player.name}
+                  </Name>
+                  <Position>{player.position || 'Ukjent Posisjon'}</Position>
+                </CardContent>
+              </PlayerCard>
+            );
+          })}
         </Grid>
       ) : (
         <EmptyState>

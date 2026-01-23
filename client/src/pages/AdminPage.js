@@ -156,7 +156,7 @@ const Card = styled.div`
     content: '';
     position: absolute;
     top: 0; left: 0; width: 4px; height: 100%;
-    background: #ff4500;
+    background: ${props => props.accentColor || '#ff4500'};
   }
 `;
 
@@ -200,7 +200,7 @@ const Input = styled.input`
 
   &:focus {
     outline: none;
-    border-color: #ff4500;
+    border-color: ${props => props.accentColor || '#ff4500'};
     background: #000;
   }
   
@@ -228,8 +228,8 @@ const Select = styled.select`
 `;
 
 const Button = styled.button`
-  background: ${props => props.danger ? '#b91c1c' : '#ff4500'};
-  color: white;
+  background: ${props => props.danger ? '#b91c1c' : (props.bg || '#ff4500')};
+  color: ${props => props.textColor || 'white'};
   border: none;
   padding: 1rem 2rem;
   font-weight: 900;
@@ -481,7 +481,8 @@ function AdminPage() {
       players, addPlayer, deletePlayer, 
       matchData, updateMatchData,
       leagueTable, addTableRow, deleteTableRow, updateTableRow, 
-      clearAllData
+      clearAllData,
+      topScorer, updateTopScorer // Hentet fra context
   } = useContext(DataContext);
   
   const [activeTab, setActiveTab] = useState('matchData');
@@ -491,6 +492,8 @@ function AdminPage() {
 
   // States
   const [motmForm, setMotmForm] = useState(motm);
+  const [topScorerForm, setTopScorerForm] = useState({ name: '', goals: 0 }); // Ny state for toppscorer
+
   const [editingMatch, setEditingMatch] = useState(null);
   const [editingCase, setEditingCase] = useState(null);
   const [editingPlayer, setEditingPlayer] = useState(null);
@@ -522,6 +525,15 @@ function AdminPage() {
     { team: 'Gjerdrum/Kløfta', played: 9, won: 2, draw: 0, lost: 7, gf: 181, ga: 193 },
     { team: 'HSIL/Ammerud', played: 8, won: 0, draw: 0, lost: 8, gf: 85, ga: 310 },
   ];
+
+  // Oppdater form state når context laster
+  useEffect(() => {
+    if (topScorer) setTopScorerForm(topScorer);
+  }, [topScorer]);
+
+  useEffect(() => {
+    if (motm) setMotmForm(motm);
+  }, [motm]);
 
   // --- AUTH ---
   useEffect(() => {
@@ -596,7 +608,14 @@ function AdminPage() {
 
   const handleSaveMotm = async () => {
     setLoading(true);
-    try { await updateMotm(motmForm); alert('Lagret!'); } catch (e) { alert(e.message); }
+    try { await updateMotm(motmForm); alert('MOTM Lagret!'); } catch (e) { alert(e.message); }
+    setLoading(false);
+  };
+
+  const handleSaveTopScorer = async () => {
+    if(!updateTopScorer) return alert("Mangler funksjon i DataContext! Sjekk koden.");
+    setLoading(true);
+    try { await updateTopScorer(topScorerForm); alert('Toppscorer lagret!'); } catch(e) { alert(e.message); }
     setLoading(false);
   };
 
@@ -691,9 +710,6 @@ function AdminPage() {
         if (lower.includes('lag') || lower.includes('kamper') || lower.includes('mål') || line.length < 5) continue;
 
         // --- SMARTERE REGEX STRATEGI ---
-        // I stedet for å matche hele linjen perfekt fra start, ser vi etter mønsteret av tall PÅ SLUTTEN av linjen.
-        // Formatet er nesten alltid: Lagnavn [mellomrom] K V U T M+ - M-
-        
         // Matcher: (Alt fram til tallene) (Tall) (Tall) (Tall) (Tall) (Tall) (Bindestrek/Mellomrom) (Tall)
         const regex = /(.*?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*[-:–.,]\s*(\d+)/;
         
@@ -702,10 +718,10 @@ function AdminPage() {
         if (match) {
           let rawTeamName = match[1].trim();
 
-          // Rens lagnavn: Fjern plasseringstall i starten (f.eks "1. Lagnavn" eller "1 Lagnavn")
+          // Rens lagnavn: Fjern plasseringstall i starten
   let teamName = rawTeamName.replace(/^\d+[.,]?\s*/, '');
           
-          // Fjern eventuelle rare tegn som OCR har lagt til starten/slutten
+          // Fjern eventuelle rare tegn
           teamName = teamName.replace(/^[._\-:;|]+/, '').trim();
 
           // Ignorer hvis navnet ble tomt eller ser ut som støy
@@ -757,8 +773,8 @@ function AdminPage() {
             }
         }
         for(let teamData of initialTeams) {
-             const points = (teamData.won * 2) + (teamData.draw * 1);
-             await addTableRow({ ...teamData, points, rank: 0 }); 
+              const points = (teamData.won * 2) + (teamData.draw * 1);
+              await addTableRow({ ...teamData, points, rank: 0 }); 
         }
         alert("Tabell lastet inn!");
     } catch (e) {
@@ -830,7 +846,7 @@ function AdminPage() {
         <MenuGroup>
           <MenuLabel>Dashbord</MenuLabel>
           <MenuItem active={activeTab === 'matchData'} onClick={() => setActiveTab('matchData')}><span>⚔️</span> Dagens Kamp</MenuItem>
-          <MenuItem active={activeTab === 'motm'} onClick={() => setActiveTab('motm')}><span>⭐</span> Man of the Match</MenuItem>
+          <MenuItem active={activeTab === 'motm'} onClick={() => setActiveTab('motm')}><span>⭐</span> Utmerkelser</MenuItem>
         </MenuGroup>
         <MenuGroup>
           <MenuLabel>Database</MenuLabel>
@@ -915,20 +931,63 @@ function AdminPage() {
           </>
         )}
 
-        {/* --- TAB: MOTM --- */}
+        {/* --- TAB: MOTM & TOPPSCORER --- */}
         {activeTab === 'motm' && (
-          <Card>
-              <CardTitle>Oppdater MOTM Kortet</CardTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
+            
+            {/* MOTM SECTION */}
+            <Card>
+              <CardTitle>⭐ Man of the Match</CardTitle>
               <FormGroup><Label>Velg fra liste</Label><Select onChange={(e) => { const p = players.find(pl => pl.name === e.target.value); if(p) setMotmForm({...motmForm, player: p.name, number: p.number, position: p.position}); }}><option>Velg spiller...</option>{players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</Select></FormGroup>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <FormGroup><Label>Navn</Label><Input value={motmForm.player} onChange={e => setMotmForm({...motmForm, player: e.target.value})} /></FormGroup>
                 <FormGroup><Label>Mål</Label><Input type="number" value={motmForm.goals} onChange={e => setMotmForm({...motmForm, goals: Number(e.target.value)})} /></FormGroup>
                 <FormGroup><Label>Reddninger</Label><Input type="number" value={motmForm.saves} onChange={e => setMotmForm({...motmForm, saves: Number(e.target.value)})} /></FormGroup>
                 <FormGroup><Label>Runde</Label><Input value={motmForm.round} onChange={e => setMotmForm({...motmForm, round: e.target.value})} /></FormGroup>
-             </div>
-             <FormGroup><Label>Bilde</Label><UploadBox><input type="file" hidden onChange={(e) => handleFileUpload(e, setMotmForm, 'image')} /><span>📸 Nytt bilde</span></UploadBox></FormGroup>
-             <Button onClick={handleSaveMotm}><span>Publiser MOTM</span></Button>
-          </Card>
+              </div>
+              <FormGroup><Label>Bilde</Label><UploadBox><input type="file" hidden onChange={(e) => handleFileUpload(e, setMotmForm, 'image')} /><span>📸 Nytt bilde</span></UploadBox></FormGroup>
+              <Button onClick={handleSaveMotm}><span>Publiser MOTM</span></Button>
+            </Card>
+
+            {/* TOP SCORER SECTION */}
+            <Card accentColor="#00ff88" style={{ border: '1px solid #00ff88' }}>
+              <CardTitle style={{ color: '#00ff88', borderBottomColor: '#00ff88' }}>⚽ Årets Toppscorer</CardTitle>
+              <div style={{marginBottom:'1.5rem', color:'#888'}}>Oppdater hvem som har gullhjelmen</div>
+              
+              <FormGroup>
+                <Label>Velg Spiller</Label>
+                <Select 
+                  value={topScorerForm.name || ''} 
+                  onChange={(e) => setTopScorerForm({ ...topScorerForm, name: e.target.value })}
+                  style={{ borderColor: '#00ff88' }}
+                >
+                  <option value="">Velg målfarlig spiller...</option>
+                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                </Select>
+              </FormGroup>
+
+              <FormGroup>
+                <Label>Antall Mål Totalt</Label>
+                <Input 
+                  type="number" 
+                  accentColor="#00ff88"
+                  style={{ fontSize: '2.5rem', color: '#00ff88', fontWeight: 'bold', textAlign: 'center' }}
+                  value={topScorerForm.goals} 
+                  onChange={e => setTopScorerForm({...topScorerForm, goals: Number(e.target.value)})} 
+                />
+              </FormGroup>
+
+              <Button 
+                onClick={handleSaveTopScorer}
+                bg="#00ff88"
+                textColor="#000"
+                style={{ width: '100%', marginTop: '1rem' }}
+              >
+                <span>🏆 Lagre Toppscorer</span>
+              </Button>
+            </Card>
+
+          </div>
         )}
 
         {/* --- TAB: MATCHES --- */}
